@@ -1,10 +1,10 @@
 import { AuthorityAddress } from './AuthorityAddress';
 import { AuthorityContact } from './AuthorityContact';
-import { AuthorityRole } from './AuthorityRole';
 
 /**
- * A public authority (organisation unit) responsible for a service within a
- * territory, with the published ways to reach it.
+ * A public authority (organisation unit) with the published ways to reach
+ * it. Its role is a property of the relation it was resolved through, see
+ * ServiceAuthority and OnlineServiceAuthority.
  */
 export interface PublicAuthority {
   /**
@@ -16,11 +16,6 @@ export interface PublicAuthority {
    * Name of the authority as published.
    */
   name?: string;
-
-  /**
-   * Role the authority plays for the requested service in the territory.
-   */
-  role: AuthorityRole;
 
   /**
    * Visiting and postal addresses.

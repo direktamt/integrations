@@ -88,7 +88,7 @@ the browser against the running API.
 | `/services`             | `GET /services`                                                                  |
 | `/services/:id`         | `GET /services/{id}?regionalKey=`, `GET /services/{id}/authorities?regionalKey=` |
 | `/services/:id/context` | `GET /services/{id}/context?regionalKey=`                                        |
-| `/online-services`      | `GET /online-services`                                                           |
+| `/online-services`      | `GET /online-services`, `GET /online-services/{id}/authorities`                  |
 | `/catalog`              | `GET /catalog`, `GET /catalog/{serviceCatalogKey}`                               |
 | `/master-texts`         | `GET /master-texts/{editorialOfficeId}/{serviceId}`                              |
 
@@ -157,7 +157,11 @@ its empty content; a genuinely empty part says "None".
 The `/online-services` form requires `regionalKey` and accepts optional
 comma-separated `serviceCatalogKeys`. The API collects all upstream pages, so
 the list is complete for the territory. Results show name, description,
-service catalog keys, external links, and `lastUpdatedAt`.
+service catalog keys, external links, and `lastUpdatedAt`. Selecting a row
+stores the online-service id in the `selected` URL parameter and opens a
+dialog with `GET /online-services/{id}/authorities`: the responsible
+organisations as authority cards with their roles, addresses, contacts and
+websites, plus the raw response. The list itself never loads authorities.
 
 ### Catalog
 
@@ -187,7 +191,7 @@ Each endpoint has a resource-oriented React Query hook:
 - `useSuggestLocations`, `useResolveLocation`, `useLocation`
 - `useSearchServices`, `useService`, `useServiceAuthorities`,
   `useServiceContext`
-- `useOnlineServices`
+- `useOnlineServices`, `useOnlineServiceAuthorities`
 - `useSearchCatalog`, `useCatalogEntry`
 - `useMasterText`
 
@@ -254,7 +258,7 @@ objects with `JsonViewer`. Open upstream links in a new tab with
 
 ## Completion criteria
 
-- All eleven integrations API endpoints are reachable and inspectable.
+- All twelve integrations API endpoints are reachable and inspectable.
 - Every display-defining value survives refresh through URL parameters.
 - TypeScript remains strict, with no `any` in `src/api/`.
 - Loading, empty, `400`, `404`, `502`, `504`, and retry behavior are explicit.

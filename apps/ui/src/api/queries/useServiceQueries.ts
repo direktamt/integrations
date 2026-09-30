@@ -1,6 +1,6 @@
 import type {
-  PublicAuthority,
   PublicServiceDescription,
+  ServiceAuthority,
   ServiceContext,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
@@ -77,7 +77,7 @@ export function useServiceAuthorities(
       useRegionalHierarchy,
     ],
     queryFn: () =>
-      apiClient.get<PublicAuthority[]>(
+      apiClient.get<ServiceAuthority[]>(
         `/services/${encodeURIComponent(id)}/authorities`,
         { regionalKey, useRegionalHierarchy },
       ),

@@ -428,7 +428,90 @@ Used by `GET /online-services` and `GET /services/{id}/context` (filtered by the
 filters until the last page and returns the complete set (a repeated token or
 more than 100 pages is treated as a contract violation).
 
-### 1.7 Deprecated endpoints
+### 1.7 Online service → responsible organisation units ✅ (implemented; beta upstream)
+
+```
+GET /v1beta2/onlineservices/{odId}/organisations
+```
+
+Organisation units responsible for one online service, with their roles,
+resolved upstream through the organisation-unit responsibilities (ZS-OE)
+along the ARS hierarchy. No parameters besides the online-service id; an
+unknown id yields 404, which the integrations API passes on as 404. Not
+marked deprecated in the OpenAPI document on 2026-09-30, but part of the
+beta `v1beta2` family (see 1.6).
+
+Request (online service of the Köln reference service):
+
+```
+GET https://pvog.fitko.net/suchdienst/api/v1beta2/onlineservices/L100002.OD.121797650/organisations
+```
+
+Response (trimmed; 9 units for this online service):
+
+```json
+{
+  "organisations": [
+    {
+      "oeId": "L100002.OE.121790552",
+      "name": "Kundenzentrum Rodenkirchen",
+      "addresses": [
+        {
+          "type": "ADDRESS",
+          "city": "Köln, Stadt",
+          "zip": "50996",
+          "street": "Mannesmannstraße",
+          "houseNumber": "10"
+        }
+      ],
+      "roles": [
+        {
+          "role": "COMPETENT_OFFICE",
+          "lbId": "L100002.LB.121407320",
+          "leikakeys": ["99115005104000"],
+          "ars": ["053150000000"]
+        }
+      ]
+    }
+  ],
+  "externalLastUpdate": "2024-10-12T12:26:05.831Z"
+}
+```
+
+`roles[].role` is an enumeration in the OpenAPI document:
+`COMPETENT_OFFICE`, `CONTACT_POINT`, `SINGLE_POINT_OF_CONTACT`,
+`OTHER_SINGLE_POINT_OF_CONTACT`, `PROFESSIONAL_POINT_OF_CONTACT`,
+`TECHNICAL_POINT_OF_CONTACT`, `TECHNICAL_CONTACT_FOR_THE_OPERATING_PLATFORM`,
+`UNKNOWN`. In 48 sampled online services across four territories only
+`COMPETENT_OFFICE` and `CONTACT_POINT` occurred, frequently both for the
+same unit and service; at most 4 units per online service in the sample,
+9 for the Köln reference. The mapping to the domain `AuthorityRole`
+follows the names (`COMPETENT_OFFICE` → `RESPONSIBLE_AUTHORITY`,
+`CONTACT_POINT` → `CONTACT_POINT`, the three technical/professional roles
+→ their English counterparts, `UNKNOWN` and anything else → `OTHER`).
+`addresses[].type` is `ADDRESS`, `DELIVERY_ADDRESS`, `POSTAL_ADDRESS` or
+`UNBESTIMMT`.
+
+Limitations and composition:
+
+- The relation carries reduced addresses and no contact channels, so the
+  integrations API loads every distinct unit from
+  `/v5/organisationunits/detail?q=` (1.5) — one call per unit, at most 8 in
+  flight — and takes addresses, contacts and websites from there; the
+  relation's own addresses are not consumed. A unit listed more than once
+  is merged into one entry with the union of its roles.
+- Only `role` of each responsibility is consumed; the responsibility's
+  `lbId`, `leikakeys` and `ars` are dropped, so the public contract says
+  which roles a unit has for the online service, not for which of its
+  services.
+- `GET /online-services` never calls this endpoint; authorities are
+  resolved only through `GET /online-services/{id}/authorities`.
+
+Wire models: `WireOnlineServiceAuthoritiesResponse` →
+`WireOnlineServiceAuthority`, `WireOnlineServiceAuthorityRole`.
+Used by `GET /online-services/{id}/authorities`.
+
+### 1.8 Deprecated endpoints
 
 Listed on the official deprecations page (state of 2026-09-30). All were
 deprecated with release 9.17.4 (May 2026) and are scheduled for removal in
@@ -444,7 +527,7 @@ November 2026. Do not build on them.
 
 None of them is used by this project.
 
-### 1.8 Watch items
+### 1.9 Watch items
 
 - `GET /v8beta1/servicedescriptions?ars={ars}&q={query}` ✅ is a new beta
   search endpoint (release 9.21, August 2026) with a reduced request and
@@ -453,12 +536,9 @@ None of them is used by this project.
   productive. `/v7` remains supported and is what this project uses; no
   migration until `/v8` leaves beta.
 - `GET /v1beta2/onlineservices` is beta, see 1.6.
-- `GET /v1beta2/onlineservices/{odId}/organisations` (beta, not exercised)
-  lists the organisation units responsible for an online service with a
-  richer role enumeration than the service detail; a candidate once it
-  leaves beta.
+- `GET /v1beta2/onlineservices/{odId}/organisations` is beta, see 1.7.
 
-### 1.9 Auxiliary endpoints (reference, not implemented)
+### 1.10 Auxiliary endpoints (reference, not implemented)
 
 Verified with a live request on 2026-09-30 unless noted:
 
@@ -670,6 +750,11 @@ checklist for coding agents.
 
 ## Changelog
 
+- **2026-09-30** (online-service authorities):
+  `/v1beta2/onlineservices/{odId}/organisations` verified live (200, no
+  deprecation header, 404 for an unknown id) and implemented (1.7) for
+  `GET /online-services/{id}/authorities`; role enumeration and sampled
+  values recorded.
 - **2026-09-30** (responsible authorities): `/v5/organisationunits/detail`
   moved from the auxiliary list to implemented (1.5), requested by `q` only;
   `organisations[]` of the service detail (1.4) is now consumed. Code lists

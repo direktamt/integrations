@@ -1,9 +1,8 @@
-import type { AuthorityRole } from '@direktamt/integrations-contracts';
-
 /**
- * Integration-only: an organisation unit a service description names as
- * responsible, as delivered by the PVOG service detail. The unit's contact
- * data is loaded separately (PvogAuthorityClient).
+ * Integration-only: an organisation unit named by a PVOG relation. The
+ * unit's contact data is loaded separately (PvogAuthorityClient); the role
+ * belongs to the relation, see ServiceAuthorityReference and
+ * OnlineServiceAuthorityReference.
  */
 export interface AuthorityReference {
   /**
@@ -12,12 +11,7 @@ export interface AuthorityReference {
   id: string;
 
   /**
-   * Name of the unit as listed with the service.
+   * Name of the unit as listed by the relation.
    */
   name?: string;
-
-  /**
-   * Role of the unit for the service in the requested territory.
-   */
-  role: AuthorityRole;
 }

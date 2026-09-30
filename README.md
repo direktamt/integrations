@@ -110,7 +110,7 @@ are documented in the handbook:
 
 ## Current capabilities
 
-The integrations API exposes eleven read-only endpoints:
+The integrations API exposes twelve read-only endpoints:
 
 | Endpoint                                            | Upstream        | Purpose                                                                                                           |
 | --------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -119,9 +119,10 @@ The integrations API exposes eleven read-only endpoints:
 | `GET /locations/{regionalKey}`                      | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                                                                            |
 | `GET /services?regionalKey=&query=`                 | PVOG Suchdienst | Plain-language service search within a territory                                                                  |
 | `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections and publication metadata                                        |
-| `GET /services/{id}/authorities?regionalKey=`       | PVOG Suchdienst | Authorities responsible for the service, with addresses and contacts                                              |
+| `GET /services/{id}/authorities?regionalKey=`       | PVOG Suchdienst | Authorities responsible for the service, with their role, addresses and contacts                                  |
 | `GET /services/{id}/context?regionalKey=`           | PVOG + FIM      | Composed context of one service: description, authorities, online services, catalog entries, master texts, status |
 | `GET /online-services?regionalKey=`                 | PVOG Suchdienst | Online-application links for a territory (all upstream pages are collected)                                       |
+| `GET /online-services/{id}/authorities`             | PVOG Suchdienst | Authorities responsible for an online service, with their roles and contacts                                      |
 | `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog                                                                   |
 | `GET /catalog/{serviceCatalogKey}`                  | FIM Portal      | One catalog entry                                                                                                 |
 | `GET /master-texts/{editorialOfficeId}/{serviceId}` | FIM Portal      | Parsed federal master text (unvalidated pass-through)                                                             |

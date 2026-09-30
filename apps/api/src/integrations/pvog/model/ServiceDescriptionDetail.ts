@@ -1,5 +1,5 @@
 import type { PublicServiceDescription } from '@direktamt/integrations-contracts';
-import { AuthorityReference } from './AuthorityReference';
+import { ServiceAuthorityReference } from './ServiceAuthorityReference';
 
 /**
  * Integration-only: one PVOG service detail response split into the public
@@ -12,5 +12,5 @@ export interface ServiceDescriptionDetail {
   /**
    * Organisation units responsible for the service, in upstream order.
    */
-  authorityReferences: AuthorityReference[];
+  authorityReferences: ServiceAuthorityReference[];
 }

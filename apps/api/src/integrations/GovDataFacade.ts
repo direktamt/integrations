@@ -4,9 +4,10 @@ import type {
   Location,
   LocationSuggestion,
   OnlineService,
+  OnlineServiceAuthority,
   ParsedMasterText,
-  PublicAuthority,
   PublicServiceDescription,
+  ServiceAuthority,
   ServiceContext,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
@@ -77,22 +78,50 @@ export class GovDataFacade {
 
   /**
    * Authorities responsible for one service within a territory, with their
-   * addresses and contact channels; empty when the service names none. The
-   * service detail supplies the references and roles, the organisation-unit
-   * detail the contact data.
+   * roles, addresses and contact channels; empty when the service names
+   * none. The service detail supplies the references and roles, the
+   * organisation-unit detail the contact data.
    */
   async listServiceAuthorities(
     serviceId: string,
     regionalKey: string,
     useRegionalHierarchy: boolean,
-  ): Promise<PublicAuthority[]> {
+  ): Promise<ServiceAuthority[]> {
     const detail = await this.pvogSearchClient.getServiceDescription(
       serviceId,
       regionalKey,
       useRegionalHierarchy,
     );
+    const authorities = await this.pvogAuthorityClient.listAuthorities(
+      detail.authorityReferences,
+    );
 
-    return this.pvogAuthorityClient.listAuthorities(detail.authorityReferences);
+    return authorities.map((authority, index) => ({
+      authority,
+      role: detail.authorityReferences[index].role,
+    }));
+  }
+
+  /**
+   * Authorities responsible for one online service with their roles,
+   * addresses and contact channels; empty when the relation names none. The
+   * relation supplies de-duplicated references and roles, the
+   * organisation-unit detail the contact data (one call per distinct unit).
+   */
+  async listOnlineServiceAuthorities(
+    onlineServiceId: string,
+  ): Promise<OnlineServiceAuthority[]> {
+    const references =
+      await this.pvogAuthorityClient.listOnlineServiceAuthorityReferences(
+        onlineServiceId,
+      );
+    const authorities =
+      await this.pvogAuthorityClient.listAuthorities(references);
+
+    return authorities.map((authority, index) => ({
+      authority,
+      roles: references[index].roles,
+    }));
   }
 
   /**

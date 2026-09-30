@@ -11,12 +11,12 @@ import {
   useService,
   useServiceAuthorities,
 } from '../../api/queries/useServiceQueries';
+import { AuthorityCardList } from '../../components/AuthorityCardList';
 import { JsonViewer } from '../../components/JsonViewer';
 import { KeyChip } from '../../components/KeyChip';
 import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { parseDefaultTrueBoolean } from './DefaultTrueBoolean';
-import { ServiceAuthorityList } from './ServiceAuthorityList';
 import { ServiceMetadataList } from './ServiceMetadataList';
 import { ServiceSectionList } from './ServiceSectionList';
 import { deriveServiceTitle } from './ServiceTitle';
@@ -124,7 +124,12 @@ export function ServiceDetailPage() {
               >
                 {(authorities) => (
                   <Stack spacing={2}>
-                    <ServiceAuthorityList authorities={authorities} />
+                    <AuthorityCardList
+                      items={authorities.map(({ authority, role }) => ({
+                        authority,
+                        roles: [role],
+                      }))}
+                    />
                     <JsonViewer
                       data={authorities}
                       title="Raw authorities response"

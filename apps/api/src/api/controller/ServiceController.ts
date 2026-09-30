@@ -1,6 +1,6 @@
 import type {
-  PublicAuthority,
   PublicServiceDescription,
+  ServiceAuthority,
   ServiceContext,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
@@ -51,7 +51,7 @@ export class ServiceController {
   listAuthorities(
     @Param('id') id: string,
     @Query() query: ListServiceAuthoritiesQuery,
-  ): Promise<PublicAuthority[]> {
+  ): Promise<ServiceAuthority[]> {
     return this.govDataFacade.listServiceAuthorities(
       id,
       query.regionalKey,

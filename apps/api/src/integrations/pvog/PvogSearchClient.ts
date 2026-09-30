@@ -13,7 +13,7 @@ import { CONFIG } from '../../config';
 import { BaseHttpClient } from '../common/BaseHttpClient';
 import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
 import { nonEmpty } from '../common/OptionalText';
-import { AuthorityReference } from './model/AuthorityReference';
+import { ServiceAuthorityReference } from './model/ServiceAuthorityReference';
 import { ServiceDescriptionDetail } from './model/ServiceDescriptionDetail';
 import { ServiceSearchOptions } from './model/ServiceSearchOptions';
 import { WireAuthorityReference } from './wire/WireAuthorityReference';
@@ -254,7 +254,7 @@ export class PvogSearchClient extends BaseHttpClient {
 
   private toAuthorityReference(
     wire: WireAuthorityReference,
-  ): AuthorityReference {
+  ): ServiceAuthorityReference {
     return {
       id: wire.id,
       name: nonEmpty(wire.title),

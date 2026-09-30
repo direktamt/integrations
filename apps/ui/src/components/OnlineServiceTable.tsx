@@ -5,13 +5,20 @@ import { KeyChip } from './KeyChip';
 
 interface OnlineServiceTableProps {
   services: OnlineService[];
+  /**
+   * Row click, e.g. to open the responsible organisations of a service.
+   */
+  onRowClick?: (service: OnlineService) => void;
 }
 
 /**
  * Online-application links as a table: name, description, catalog keys,
  * external links (new tab) and the upstream change timestamp.
  */
-export function OnlineServiceTable({ services }: OnlineServiceTableProps) {
+export function OnlineServiceTable({
+  services,
+  onRowClick,
+}: OnlineServiceTableProps) {
   return (
     <DataTable
       columns={[
@@ -36,7 +43,12 @@ export function OnlineServiceTable({ services }: OnlineServiceTableProps) {
             service.links.map((link, index) =>
               link.url ? (
                 <div key={index}>
-                  <Link href={link.url} target="_blank" rel="noreferrer">
+                  <Link
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     {link.title || link.url}
                   </Link>
                 </div>
@@ -50,6 +62,7 @@ export function OnlineServiceTable({ services }: OnlineServiceTableProps) {
       ]}
       rows={services}
       getRowKey={(service, index) => service.id ?? String(index)}
+      onRowClick={onRowClick}
     />
   );
 }

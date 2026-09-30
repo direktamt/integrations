@@ -1,4 +1,7 @@
-import type { OnlineService } from '@direktamt/integrations-contracts';
+import type {
+  OnlineService,
+  OnlineServiceAuthority,
+} from '@direktamt/integrations-contracts';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../ApiClient';
 
@@ -20,5 +23,20 @@ export function useOnlineServices(
           : undefined,
       }),
     enabled: regionalKey.length > 0,
+  });
+}
+
+/**
+ * GET /online-services/{id}/authorities — authorities responsible for one
+ * online service with their roles, addresses and contact channels.
+ */
+export function useOnlineServiceAuthorities(id: string) {
+  return useQuery({
+    queryKey: ['onlineServices', id, 'authorities'],
+    queryFn: () =>
+      apiClient.get<OnlineServiceAuthority[]>(
+        `/online-services/${encodeURIComponent(id)}/authorities`,
+      ),
+    enabled: id.length > 0,
   });
 }

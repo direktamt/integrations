@@ -7,16 +7,20 @@ import { OnlineServiceTable } from '../../components/OnlineServiceTable';
 import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
+import { OnlineServiceAuthoritiesDialog } from './OnlineServiceAuthoritiesDialog';
 
 /**
  * GET /online-services — direct online-application links for a
- * territory, optionally filtered per service.
+ * territory, optionally filtered per service. A row click opens the
+ * responsible organisations of that online service (`selected` URL
+ * parameter); the list itself never loads authorities.
  */
 export function OnlineServicesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const regionalKey = searchParams.get('regionalKey') ?? '';
   const serviceCatalogKeysParam = searchParams.get('serviceCatalogKeys') ?? '';
   const serviceCatalogKeys = serviceCatalogKeysParam.split(',').filter(Boolean);
+  const selectedId = searchParams.get('selected') ?? '';
   const [keyInput, setKeyInput] = useState(regionalKey);
   const [catalogKeysInput, setCatalogKeysInput] =
     useState<string[]>(serviceCatalogKeys);
@@ -43,6 +47,22 @@ export function OnlineServicesPage() {
       next.set('serviceCatalogKeys', catalogKeysInput.join(','));
     setSearchParams(next);
   };
+
+  const selectOnlineService = (id: string | null) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (id === null) {
+        next.delete('selected');
+      } else {
+        next.set('selected', id);
+      }
+      return next;
+    });
+  };
+
+  const selectedService = onlineServicesQuery.data?.find(
+    (service) => service.id === selectedId,
+  );
 
   return (
     <>
@@ -80,8 +100,22 @@ export function OnlineServicesPage() {
         idleMessage="Provide a regional key to load online services."
         isEmpty={(services) => services.length === 0}
       >
-        {(services) => <OnlineServiceTable services={services} />}
+        {(services) => (
+          <OnlineServiceTable
+            services={services}
+            onRowClick={(service) => {
+              if (service.id) selectOnlineService(service.id);
+            }}
+          />
+        )}
       </QueryStateGate>
+      {selectedId && (
+        <OnlineServiceAuthoritiesDialog
+          onlineServiceId={selectedId}
+          title={selectedService?.name}
+          onClose={() => selectOnlineService(null)}
+        />
+      )}
     </>
   );
 }

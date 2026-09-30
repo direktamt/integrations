@@ -2,6 +2,7 @@ import {
   AuthorityContactType,
   type AuthorityAddress,
   type AuthorityContact,
+  type AuthorityRole,
   type PublicAuthority,
 } from '@direktamt/integrations-contracts';
 import {
@@ -17,23 +18,29 @@ import {
   Typography,
 } from '@mui/material';
 import { ReactNode } from 'react';
-import { KeyChip } from '../../components/KeyChip';
+import { KeyChip } from './KeyChip';
 
-interface ServiceAuthorityListProps {
-  authorities: PublicAuthority[];
+export interface AuthorityCardItem {
+  authority: PublicAuthority;
+  /**
+   * Roles the authority plays in the relation it was resolved through.
+   */
+  roles: AuthorityRole[];
+}
+
+interface AuthorityCardListProps {
+  items: AuthorityCardItem[];
 }
 
 /**
- * Responsible authorities of a service: name, role, official id, and the
- * published addresses, contact channels and websites. Absent upstream data
- * is shown as absent.
+ * Authorities of a relation (service or online service): name, roles,
+ * official id, and the published addresses, contact channels and websites.
+ * Absent upstream data is shown as absent.
  */
-export function ServiceAuthorityList({
-  authorities,
-}: ServiceAuthorityListProps) {
+export function AuthorityCardList({ items }: AuthorityCardListProps) {
   return (
     <Stack spacing={2}>
-      {authorities.map((authority) => (
+      {items.map(({ authority, roles }) => (
         <Card key={authority.id} variant="outlined">
           <CardContent>
             <Stack
@@ -41,16 +48,20 @@ export function ServiceAuthorityList({
               spacing={1}
               alignItems="center"
               flexWrap="wrap"
+              useFlexGap
             >
               <Typography variant="subtitle1">
                 {authority.name ?? '(unnamed)'}
               </Typography>
-              <Chip
-                label={authority.role}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
+              {roles.map((role) => (
+                <Chip
+                  key={role}
+                  label={role}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+              ))}
               <KeyChip value={authority.id} />
             </Stack>
             <AuthorityDetailBlock

@@ -159,8 +159,7 @@ describe('ServiceContextAssembler', () => {
     expect(context.service.id).toBe('L100002.LB.1');
     expect(context.authorities).toMatchObject([
       {
-        id: 'L100002.OE.1',
-        name: 'Kundenzentrum Innenstadt',
+        authority: { id: 'L100002.OE.1', name: 'Kundenzentrum Innenstadt' },
         role: AuthorityRole.ResponsibleAuthority,
       },
     ]);

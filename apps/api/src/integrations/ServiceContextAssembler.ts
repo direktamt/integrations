@@ -2,6 +2,7 @@ import {
   ServiceContextPart,
   type CatalogEntry,
   type ParsedMasterText,
+  type ServiceAuthority,
   type ServiceContext,
 } from '@direktamt/integrations-contracts';
 import { Injectable, Logger } from '@nestjs/common';
@@ -9,6 +10,7 @@ import { IntegrationException } from './common/exceptions/IntegrationException';
 import { UpstreamHttpException } from './common/exceptions/UpstreamHttpException';
 import { FimPortalClient } from './fim/FimPortalClient';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
+import { ServiceAuthorityReference } from './pvog/model/ServiceAuthorityReference';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
 
 /**
@@ -65,7 +67,7 @@ export class ServiceContextAssembler {
     const [authorities, onlineServices, [catalogEntries, masterTexts]] =
       await Promise.all([
         this.loadPart(ServiceContextPart.Authorities, () =>
-          this.pvogAuthorityClient.listAuthorities(detail.authorityReferences),
+          this.listServiceAuthorities(detail.authorityReferences),
         ),
         this.loadPart(ServiceContextPart.OnlineServices, () =>
           serviceCatalogKeys.length === 0
@@ -99,6 +101,18 @@ export class ServiceContextAssembler {
         unavailableParts,
       },
     };
+  }
+
+  private async listServiceAuthorities(
+    references: ServiceAuthorityReference[],
+  ): Promise<ServiceAuthority[]> {
+    const authorities =
+      await this.pvogAuthorityClient.listAuthorities(references);
+
+    return authorities.map((authority, index) => ({
+      authority,
+      role: references[index].role,
+    }));
   }
 
   /**

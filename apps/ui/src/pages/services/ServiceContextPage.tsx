@@ -21,6 +21,7 @@ import {
   useSearchParams,
 } from 'react-router';
 import { useServiceContext } from '../../api/queries/useServiceQueries';
+import { AuthorityCardList } from '../../components/AuthorityCardList';
 import { DataTable } from '../../components/DataTable';
 import { JsonViewer } from '../../components/JsonViewer';
 import { KeyChip } from '../../components/KeyChip';
@@ -28,7 +29,6 @@ import { OnlineServiceTable } from '../../components/OnlineServiceTable';
 import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { parseDefaultTrueBoolean } from './DefaultTrueBoolean';
-import { ServiceAuthorityList } from './ServiceAuthorityList';
 import { ServiceMetadataList } from './ServiceMetadataList';
 import { deriveServiceTitle } from './ServiceTitle';
 
@@ -96,7 +96,12 @@ export function ServiceContextPage() {
               context={context}
               isEmpty={context.authorities.length === 0}
             >
-              <ServiceAuthorityList authorities={context.authorities} />
+              <AuthorityCardList
+                items={context.authorities.map(({ authority, role }) => ({
+                  authority,
+                  roles: [role],
+                }))}
+              />
             </ContextSection>
             <ContextSection
               title="Online services"

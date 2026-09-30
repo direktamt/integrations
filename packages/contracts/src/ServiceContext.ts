@@ -1,8 +1,8 @@
 import { CatalogEntry } from './CatalogEntry';
 import { OnlineService } from './OnlineService';
 import { ParsedMasterText } from './ParsedMasterText';
-import { PublicAuthority } from './PublicAuthority';
 import { PublicServiceDescription } from './PublicServiceDescription';
+import { ServiceAuthority } from './ServiceAuthority';
 import { ServiceContextStatus } from './ServiceContextStatus';
 
 /**
@@ -21,7 +21,7 @@ export interface ServiceContext {
   /**
    * Authorities responsible for the service in the territory (PVOG).
    */
-  authorities: PublicAuthority[];
+  authorities: ServiceAuthority[];
 
   /**
    * Online-application links published for the service's catalog keys in

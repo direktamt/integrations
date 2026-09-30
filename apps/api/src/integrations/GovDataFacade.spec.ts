@@ -142,13 +142,11 @@ describe('GovDataFacade', () => {
 
     expect(authorities).toMatchObject([
       {
-        id: 'L100002.OE.1',
-        name: 'Kundenzentrum Innenstadt',
+        authority: { id: 'L100002.OE.1', name: 'Kundenzentrum Innenstadt' },
         role: AuthorityRole.ResponsibleAuthority,
       },
       {
-        id: 'L100002.OE.2',
-        name: 'Bürgertelefon',
+        authority: { id: 'L100002.OE.2', name: 'Bürgertelefon' },
         role: AuthorityRole.ContactPoint,
       },
     ]);
@@ -161,6 +159,130 @@ describe('GovDataFacade', () => {
       facade.listServiceAuthorities('L100002.LB.1', '053150000000', true),
     ).resolves.toEqual([]);
     expect(fetchStub.calls).toHaveLength(1);
+  });
+
+  describe('listOnlineServiceAuthorities', () => {
+    const RELATION_PATH =
+      '/suchdienst/api/v1beta2/onlineservices/L100002.OD.1/organisations';
+    const responsibility = (role: string) => ({
+      role,
+      lbId: 'L100002.LB.1',
+      leikakeys: ['99115005104000'],
+      ars: ['053150000000'],
+    });
+
+    function serveRelation(
+      relation: unknown,
+      unitsById: Record<string, unknown>,
+    ) {
+      fetchStub.respondWith((url) => {
+        const { pathname, searchParams } = new URL(url);
+
+        if (pathname === RELATION_PATH) return json(relation);
+        const found =
+          pathname === AUTHORITY_PATH
+            ? unitsById[searchParams.get('q') ?? '']
+            : undefined;
+
+        return found ? json(found) : json({ code: 'NOT_FOUND' }, 404);
+      });
+    }
+
+    it('composes the relation with the unit details and loads every unit once', async () => {
+      serveRelation(
+        {
+          organisations: [
+            {
+              oeId: 'L100002.OE.1',
+              name: 'Kundenzentrum Innenstadt',
+              roles: [
+                responsibility('COMPETENT_OFFICE'),
+                responsibility('CONTACT_POINT'),
+              ],
+            },
+            {
+              oeId: 'L100002.OE.2',
+              name: 'Hotline',
+              roles: [responsibility('CONTACT_POINT')],
+            },
+            {
+              oeId: 'L100002.OE.1',
+              roles: [responsibility('COMPETENT_OFFICE')],
+            },
+          ],
+        },
+        {
+          'L100002.OE.1': unit('L100002.OE.1'),
+          'L100002.OE.2': unit('L100002.OE.2'),
+        },
+      );
+
+      const authorities =
+        await facade.listOnlineServiceAuthorities('L100002.OD.1');
+
+      expect(fetchStub.calls.map((call) => new URL(call.url).pathname)).toEqual(
+        [RELATION_PATH, AUTHORITY_PATH, AUTHORITY_PATH],
+      );
+      expect(
+        fetchStub.calls
+          .slice(1)
+          .map((call) => new URL(call.url).searchParams.get('q')),
+      ).toEqual(['L100002.OE.1', 'L100002.OE.2']);
+      expect(authorities).toMatchObject([
+        {
+          authority: { id: 'L100002.OE.1', name: 'Kundenzentrum Innenstadt' },
+          roles: [
+            AuthorityRole.ResponsibleAuthority,
+            AuthorityRole.ContactPoint,
+          ],
+        },
+        {
+          authority: { id: 'L100002.OE.2', name: 'Hotline' },
+          roles: [AuthorityRole.ContactPoint],
+        },
+      ]);
+      expect(authorities[0].authority.contacts).toHaveLength(1);
+    });
+
+    it('returns an empty list with a single request for an online service without relation', async () => {
+      serveRelation({ organisations: [] }, {});
+
+      await expect(
+        facade.listOnlineServiceAuthorities('L100002.OD.1'),
+      ).resolves.toEqual([]);
+      expect(fetchStub.calls).toHaveLength(1);
+    });
+
+    it('passes an upstream 404 for an unknown online service through', async () => {
+      fetchStub.respondWithJson({ code: 'NOT_FOUND' }, 404);
+
+      await expect(
+        facade.listOnlineServiceAuthorities('L100002.OD.gone'),
+      ).rejects.toMatchObject({
+        status: 404,
+      });
+      expect(fetchStub.calls).toHaveLength(1);
+    });
+
+    it('passes an upstream 404 for an unknown organisation through', async () => {
+      serveRelation(
+        {
+          organisations: [
+            {
+              oeId: 'L100002.OE.gone',
+              roles: [responsibility('COMPETENT_OFFICE')],
+            },
+          ],
+        },
+        {},
+      );
+
+      await expect(
+        facade.listOnlineServiceAuthorities('L100002.OD.1'),
+      ).rejects.toMatchObject({
+        status: 404,
+      });
+    });
   });
 
   it('passes an upstream 404 for an unknown service through without loading units', async () => {

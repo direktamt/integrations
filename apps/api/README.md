@@ -99,7 +99,17 @@ units with their roles, then one organisation-unit detail per unit is loaded
 in parallel and mapped to `PublicAuthority` (normalized role, address type
 and contact type derived from the XZuFi/XÖV code lists documented in the
 handbook). Consumers never see organisation-unit ids or code-list codes as
-part of the request; an unknown service or unit is answered with 404.
+part of the request; an unknown service or unit is answered with 404. The
+role of an authority is a property of the relation it was resolved through
+(`ServiceAuthority.role`); the `PublicAuthority` itself is the contact
+card.
+
+`GET /online-services/{id}/authorities` follows the beta PVOG relation
+`/v1beta2/onlineservices/{odId}/organisations` and then loads every distinct
+organisation unit once (`OnlineServiceAuthority`: contact card plus the
+unit's distinct roles). `GET /online-services` never resolves authorities,
+so the list stays one paginated upstream call; organisation-unit details
+are requested with at most 8 calls in flight (`mapConcurrently`).
 
 `GET /services/{id}/context` is composed by `ServiceContextAssembler` behind
 the facade: the service detail is loaded once and is mandatory (404 when
@@ -148,7 +158,7 @@ values such as search terms, postal codes or regional keys are never logged.
 against a stubbed `fetch` (`test/FetchStub.ts`); they never reach the
 network. The tests cover `BaseHttpClient` (query building, parsing,
 validation, error mapping, timeout), the PVOG and FIM mapping code including
-online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the request DTO limits, and the status mapping of
+online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the online-service → authorities composition (de-duplication, concurrency cap), the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the concurrency helper, the request DTO limits, and the status mapping of
 `UpstreamExceptionFilter`.
 
 Live verification of the upstream contracts is a manual procedure, see
