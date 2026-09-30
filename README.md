@@ -89,7 +89,7 @@ The integrations API exposes ten read-only endpoints:
 | `GET /locations?cityName=&postalCode=`              | PVOG Suchdienst | Resolve a city name or postal code to territories                           |
 | `GET /locations/{regionalKey}`                      | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                                      |
 | `GET /services?regionalKey=&query=`                 | PVOG Suchdienst | Plain-language service search within a territory                            |
-| `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections                           |
+| `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections and publication metadata  |
 | `GET /services/{id}/authorities?regionalKey=`       | PVOG Suchdienst | Authorities responsible for the service, with addresses and contacts        |
 | `GET /online-services?regionalKey=`                 | PVOG Suchdienst | Online-application links for a territory (all upstream pages are collected) |
 | `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog                             |

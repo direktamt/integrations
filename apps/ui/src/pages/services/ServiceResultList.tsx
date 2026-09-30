@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 import { DataTable } from '../../components/DataTable';
 import { KeyChip } from '../../components/KeyChip';
 import { serializeDefaultTrueBoolean } from './DefaultTrueBoolean';
+import { ServiceMetadataList } from './ServiceMetadataList';
 import { deriveServiceTitle } from './ServiceTitle';
 
 interface ServiceResultListProps {
@@ -56,6 +57,13 @@ export function ServiceResultList({
           width: 100,
           render: (service: PublicServiceDescription) =>
             service.sections.length,
+        },
+        {
+          header: 'Metadata',
+          width: 260,
+          render: (service: PublicServiceDescription) => (
+            <ServiceMetadataList service={service} dense />
+          ),
         },
       ]}
       rows={result.services}

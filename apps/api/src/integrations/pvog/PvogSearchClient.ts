@@ -218,6 +218,9 @@ export class PvogSearchClient extends BaseHttpClient {
       title: wire.title,
       summary: wire.summary,
       regionalKeys: wire.regionalKeys ?? [],
+      federalStateKeys: wire.federalStateKeys ?? [],
+      targetAudiences: wire.addressees ?? [],
+      availableLanguages: wire.availableLanguages ?? [],
       sections: (wire.sections ?? []).map((section) => this.toSection(section)),
     };
   }

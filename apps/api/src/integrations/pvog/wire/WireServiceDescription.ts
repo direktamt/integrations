@@ -50,7 +50,8 @@ export class WireServiceDescription {
   regionalKeys?: string[];
 
   /**
-   * ARS keys of the corresponding federal states.
+   * ARS keys of the corresponding federal states ("00" for federal
+   * descriptions). Search results only; absent on the detail endpoint.
    */
   @Expose({ name: 'arsFederalstate' })
   @IsOptional()
@@ -59,7 +60,9 @@ export class WireServiceDescription {
   federalStateKeys?: string[];
 
   /**
-   * Target audiences (citizens, businesses, ...).
+   * Target audiences as published labels (XZuFi Leistungsadressat, e.g.
+   * "Bürger", "Unternehmen"). Search results only; absent on the detail
+   * endpoint.
    */
   @Expose()
   @IsOptional()
@@ -68,7 +71,7 @@ export class WireServiceDescription {
   addressees?: string[];
 
   /**
-   * Languages the description is available in.
+   * ISO 639-1 codes of the languages the description is available in.
    */
   @Expose()
   @IsOptional()

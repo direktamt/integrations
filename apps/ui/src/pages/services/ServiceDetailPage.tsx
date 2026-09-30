@@ -11,6 +11,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { parseDefaultTrueBoolean } from './DefaultTrueBoolean';
 import { ServiceAuthorityList } from './ServiceAuthorityList';
+import { ServiceMetadataList } from './ServiceMetadataList';
 import { ServiceSectionList } from './ServiceSectionList';
 import { deriveServiceTitle } from './ServiceTitle';
 
@@ -90,6 +91,7 @@ export function ServiceDetailPage() {
                 </Typography>
               )}
             </Box>
+            <ServiceMetadataList service={service} />
             <Box>
               <Typography variant="subtitle2" gutterBottom>
                 Sections

@@ -23,6 +23,8 @@ const SERVICE_DESCRIPTION = {
   leikakeys: ['99115005104000'],
   ars: ['053150000000'],
   arsFederalstate: ['05'],
+  addressees: ['Bürger'],
+  availableLanguages: ['de', 'en'],
   details: [
     {
       '@type': '_module',
@@ -116,6 +118,9 @@ describe('PvogSearchClient', () => {
       title: 'Wohnsitz anmelden',
       summary: 'Anmeldung einer Wohnung.',
       regionalKeys: ['053150000000'],
+      federalStateKeys: ['05'],
+      targetAudiences: ['Bürger'],
+      availableLanguages: ['de', 'en'],
       sections: [
         {
           type: ServiceSectionType.RequiredDocuments,
@@ -136,6 +141,74 @@ describe('PvogSearchClient', () => {
           links: [],
         },
       ],
+    });
+  });
+
+  describe('service metadata', () => {
+    it('normalizes missing metadata arrays to empty lists', async () => {
+      fetchStub.respondWithJson({
+        id: 'L100002.LB.2',
+        name: 'Ohne Metadaten',
+        details: [],
+      });
+
+      const service = await client.getServiceDescription(
+        'L100002.LB.2',
+        '053150000000',
+        true,
+      );
+
+      expect(service).toMatchObject({
+        serviceCatalogKeys: [],
+        regionalKeys: [],
+        federalStateKeys: [],
+        targetAudiences: [],
+        availableLanguages: [],
+        sections: [],
+      });
+    });
+
+    it('keeps every published federal state, target audience and language', async () => {
+      fetchStub.respondWithJson({
+        ...SERVICE_DESCRIPTION,
+        ars: ['053150000000', '110000000000'],
+        arsFederalstate: ['05', '11', '00'],
+        addressees: ['Bürger', 'Unternehmen'],
+        availableLanguages: ['de', 'en', 'fr'],
+      });
+
+      const service = await client.getServiceDescription(
+        'L100002.LB.1',
+        '053150000000',
+        true,
+      );
+
+      expect(service.federalStateKeys).toEqual(['05', '11', '00']);
+      expect(service.targetAudiences).toEqual(['Bürger', 'Unternehmen']);
+      expect(service.availableLanguages).toEqual(['de', 'en', 'fr']);
+    });
+
+    it('carries the metadata into search results', async () => {
+      fetchStub.respondWithJson({
+        serviceDescriptions: {
+          content: [SERVICE_DESCRIPTION],
+          totalElements: 1,
+          totalPages: 1,
+        },
+      });
+
+      const result = await client.searchServices('053150000000', 'Wohnsitz', {
+        size: 10,
+        page: 0,
+        fuzzySearch: true,
+        useRegionalHierarchy: true,
+      });
+
+      expect(result.services[0]).toMatchObject({
+        federalStateKeys: ['05'],
+        targetAudiences: ['Bürger'],
+        availableLanguages: ['de', 'en'],
+      });
     });
   });
 

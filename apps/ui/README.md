@@ -121,13 +121,16 @@ Defaults match the API: `fuzzySearch` and `useRegionalHierarchy` default to
 checkboxes and the outgoing request always reflect the effective value; an
 unchecked box sends `false` explicitly.
 
-Results use server-side pagination and show titles, service catalog keys, and
-section counts. Selecting a row opens the deep-linkable
+Results use server-side pagination and show titles, service catalog keys,
+section counts, and the publication metadata (target audiences, languages,
+federal states) as compact chip groups; empty groups are omitted. Selecting a row opens the deep-linkable
 `/services/:id?regionalKey=...` detail page; when the search ran with
 `useRegionalHierarchy=false`, the detail link carries that parameter along
 and the detail page applies the same absent-means-true semantics. The detail
 page renders all sections, links, official keys, sanitized upstream HTML, and
-the raw response.
+the raw response. Target audiences, languages and federal states are shown
+as compact chip groups; a group without values is omitted (the detail
+endpoint publishes only the languages).
 
 Below the sections, a "Responsible authorities" region loads
 `GET /services/{id}/authorities` with the same `regionalKey` and

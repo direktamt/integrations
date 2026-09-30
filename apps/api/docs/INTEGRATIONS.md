@@ -203,9 +203,17 @@ Response shape (about 70 KB for this query on 2026-09-30; trimmed):
 }
 ```
 
-Content items also carry fields this project does not consume (`teaser`,
+Besides the fields shown, content items carry `arsFederalstate` (keys of
+the federal states, `00` for federal descriptions), `addressees` (target
+audiences as published labels from the XZuFi Leistungsadressat code list —
+`Bürger`, `Unternehmen` in live data) and `availableLanguages` (ISO 639-1
+codes, `de` and `en` in live data); they are exposed as `federalStateKeys`,
+`targetAudiences` and `availableLanguages`. `addressees` is only set when
+the authority classified the service (29 of 66 sampled items on
+2026-09-30). Fields this project does not consume (`teaser`,
 `onlineServiceLinks`, `sdgInformation`, `sourcePortals`, `synonyms`,
-`typing`, validity periods, timestamps); the wire model drops them.
+`typing`, `languageCode`, validity periods, timestamps) are dropped by the
+wire model.
 
 Each service is delivered as a list of `details` sections. Section titles
 observed in live data: `Kurzinfo`, `Leistungsbezeichnung`, `Beschreibung`,
@@ -230,10 +238,15 @@ GET /v6/servicedescriptions/{lbid}/detail?ars={ars}&useArsHierarchy={bool}
 ```
 
 `ars` is required (400 without it). Returns one object shaped like a 1.3
-`content[]` item (`id`, `name`, `leikakeys`, `ars`, `details[]`) plus
-`organisations[]` — the responsible organisation units with their roles,
-consumed by 1.5 — and `forms`, `onlineServiceLinks`, `personalMatters` and
-validity data that this project does not consume. An unknown `lbid`, or a
+`content[]` item (`id`, `name`, `leikakeys`, `ars`, `availableLanguages`,
+`details[]`) plus `organisations[]` — the responsible organisation units
+with their roles, consumed by 1.5 — and `forms`, `onlineServiceLinks`,
+`personalMatters` and validity data that this project does not consume.
+Unlike the search item, the detail object carries no `description`,
+`addressees` or `arsFederalstate` (verified against the OpenAPI schema and
+eight live responses on 2026-09-30), so `summary` is absent and
+`targetAudiences` and `federalStateKeys` are empty on
+`GET /services/{id}`. An unknown `lbid`, or a
 known `lbid` with an `ars` the description does not apply to, yields 404,
 which the integrations API passes on as 404.
 

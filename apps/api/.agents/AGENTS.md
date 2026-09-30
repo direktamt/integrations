@@ -33,6 +33,7 @@ npm run lint --workspace @direktamt/integrations-api
    | Kosten & Gebühren                                                            | `Fees`                     |
    | Fristen                                                                      | `Deadlines`                |
    | Zuständige Stelle                                                            | `ResponsibleAuthority`     |
+   | Leistungsadressat                                                            | `targetAudiences`          |
    | Organisationseinheit                                                         | `PublicAuthority`          |
    | Anschrift                                                                    | `AuthorityAddress`         |
    | Erreichbarkeit / Kommunikation                                               | `AuthorityContact`         |
