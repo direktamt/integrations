@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
+import { PvogAuthorityClient } from './PvogAuthorityClient';
 import { PvogSearchClient } from './PvogSearchClient';
 
 @Module({
-  providers: [PvogSearchClient],
-  exports: [PvogSearchClient],
+  providers: [PvogSearchClient, PvogAuthorityClient],
+  exports: [PvogSearchClient, PvogAuthorityClient],
 })
 export class PvogModule {}

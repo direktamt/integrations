@@ -33,6 +33,9 @@ npm run lint --workspace @direktamt/integrations-api
    | Kosten & Gebühren                                                            | `Fees`                     |
    | Fristen                                                                      | `Deadlines`                |
    | Zuständige Stelle                                                            | `ResponsibleAuthority`     |
+   | Organisationseinheit                                                         | `PublicAuthority`          |
+   | Anschrift                                                                    | `AuthorityAddress`         |
+   | Erreichbarkeit / Kommunikation                                               | `AuthorityContact`         |
    | Onlinedienst                                                                 | `OnlineService`            |
    | German or snake_case property names are forbidden in ALL models, including   |
    | wire models in `wire/`: wire models declare English camelCase properties and |
@@ -44,7 +47,11 @@ npm run lint --workspace @direktamt/integrations-api
 
 3. **Integration architecture.**
    - `integrations/` contains one adapter per external API
-     (`PvogSearchClient`, `FimPortalClient`), each in its own module.
+     (`PvogSearchClient` and `PvogAuthorityClient` for the PVOG Suchdienst,
+     `FimPortalClient`), each API in its own module. Split a client by
+     upstream resource when one class would otherwise mix unrelated
+     resources; a public operation that composes several upstream calls
+     stays inside one client.
    - App code depends only on `GovDataFacade`. Never inject clients directly
      into controllers/use cases.
    - New external API → new subfolder with `{Name}Module`, `{Name}Client`,

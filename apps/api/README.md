@@ -61,7 +61,8 @@ src/
     common/UrlSanitizer.ts           # strips query values from URLs before they reach logs
     common/exceptions/               # IntegrationException hierarchy
     pvog/                            # PVOG Suchdienst adapter
-      PvogSearchClient.ts
+      PvogSearchClient.ts            # locations, services, online services
+      PvogAuthorityClient.ts         # responsible organisation units (authorities)
       model/ServiceSearchOptions.ts  # integration-only input options
       wire/                          # validated upstream JSON contracts
     fim/                             # FIM Portal adapter
@@ -90,6 +91,14 @@ unstable.
 (same `ars` and `leikaIds` filters on every page, repeated tokens and runaway
 page counts rejected as contract violations) and returns the complete set;
 the public contract stays `OnlineService[]`.
+
+`GET /services/{id}/authorities` composes two PVOG resources inside
+`PvogAuthorityClient`: the service detail names the responsible organisation
+units with their roles, then one organisation-unit detail per unit is loaded
+in parallel and mapped to `PublicAuthority` (normalized role, address type
+and contact type derived from the XZuFi/XÖV code lists documented in the
+handbook). Consumers never see organisation-unit ids or code-list codes as
+part of the request; an unknown service or unit is answered with 404.
 
 ## Request validation
 
@@ -123,8 +132,9 @@ values such as search terms, postal codes or regional keys are never logged.
 against a stubbed `fetch` (`test/FetchStub.ts`); they never reach the
 network. The tests cover `BaseHttpClient` (query building, parsing,
 validation, error mapping, timeout), the PVOG and FIM mapping code including
-online-service pagination with small synthetic fixtures, the request DTO
-limits, and the status mapping of `UpstreamExceptionFilter`.
+online-service pagination and the service-to-authorities composition with
+small synthetic fixtures, the request DTO limits, and the status mapping of
+`UpstreamExceptionFilter`.
 
 Live verification of the upstream contracts is a manual procedure, see
 [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md).

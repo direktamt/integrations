@@ -17,11 +17,11 @@ are listed for reference only.
 
 ## Overview
 
-| API                    | Base URL                                | Auth                 | Integration role                                                                                         |
-| ---------------------- | --------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------- |
-| PVOG Suchdienst        | `https://pvog.fitko.net/suchdienst/api` | none                 | Implemented: location autocomplete and resolution, service search, service details, online-service links |
-| FIM Portal             | `https://fimportal.de/api`              | none                 | Implemented: LeiKa service catalog, federal master texts                                                 |
-| PVOG Bereitstelldienst | issued after approval                   | application required | Reference / not implemented: bulk access to the PVOG data set                                            |
+| API                    | Base URL                                | Auth                 | Integration role                                                                                                                  |
+| ---------------------- | --------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| PVOG Suchdienst        | `https://pvog.fitko.net/suchdienst/api` | none                 | Implemented: location autocomplete and resolution, service search, service details, responsible authorities, online-service links |
+| FIM Portal             | `https://fimportal.de/api`              | none                 | Implemented: LeiKa service catalog, federal master texts                                                                          |
+| PVOG Bereitstelldienst | issued after approval                   | application required | Reference / not implemented: bulk access to the PVOG data set                                                                     |
 
 Status labels used in this document:
 
@@ -230,14 +230,136 @@ GET /v6/servicedescriptions/{lbid}/detail?ars={ars}&useArsHierarchy={bool}
 ```
 
 `ars` is required (400 without it). Returns one object shaped like a 1.3
-`content[]` item (`id`, `name`, `leikakeys`, `ars`, `details[]`, plus
-`organisations`, `forms`, `onlineServiceLinks`, `personalMatters` and
-validity data that this project does not consume). An unknown `lbid` yields
-404, which the integrations API passes on as 404.
+`content[]` item (`id`, `name`, `leikakeys`, `ars`, `details[]`) plus
+`organisations[]` — the responsible organisation units with their roles,
+consumed by 1.5 — and `forms`, `onlineServiceLinks`, `personalMatters` and
+validity data that this project does not consume. An unknown `lbid`, or a
+known `lbid` with an `ars` the description does not apply to, yields 404,
+which the integrations API passes on as 404.
 
-Wire model: `WireServiceDescription`. Used by `GET /services/{id}`.
+Wire model: `WireServiceDescription` (with `WireAuthorityReference` for
+`organisations[]`). Used by `GET /services/{id}` and, for the
+`organisations[]` list, by `GET /services/{id}/authorities` (1.5).
 
-### 1.5 Online-application links (Onlinedienste) ✅ (implemented; beta upstream)
+### 1.5 Responsible authorities (Organisationseinheiten) ✅ (implemented)
+
+`GET /services/{id}/authorities` composes two upstream calls:
+
+```
+GET /v6/servicedescriptions/{lbid}/detail?ars={ars}&useArsHierarchy={bool}   # organisations[] (1.4)
+GET /v5/organisationunits/detail?q={organisationUnitId}                     # one call per listed unit
+```
+
+The service detail lists the responsible organisation units in
+`organisations[]` as a reduced view: `id`, `title`, `role` (XZuFi code list
+`xzufi.zustaendigkeitsrolle`) and `criteria`. The role is already resolved
+for the requested territory and hierarchy setting. The organisation-unit
+detail then supplies addresses, contact channels and web addresses.
+
+Request (first unit of the Köln reference service):
+
+```
+GET https://pvog.fitko.net/suchdienst/api/v5/organisationunits/detail?q=L100002.OE.146016735
+```
+
+Response (trimmed):
+
+```json
+{
+  "id": "L100002.OE.146016735",
+  "title": "Kundenzentrum Chorweiler",
+  "lastUpdate": "2026-09-30T09:55:34Z",
+  "languages": ["de"],
+  "role": {
+    "name": "Zuständige Stelle",
+    "code": "02",
+    "uri": "urn:xoev-de:fim:codeliste:xzufi.zustaendigkeitsrolle",
+    "version": "1"
+  },
+  "location": {
+    "addresses": [
+      {
+        "code": "001",
+        "type": "Hausanschrift",
+        "street": "Pariser Platz",
+        "houseNumber": "1 (1. Etage)",
+        "zip": "50765",
+        "city": "Köln, Stadt",
+        "geo": {
+          "longitude": "6.899202",
+          "latitude": "51.022305",
+          "system": "EPSG:4326"
+        }
+      }
+    ],
+    "communications": [
+      {
+        "code": "01",
+        "name": "E-Mail",
+        "value": "kundenzentrum-chorweiler@stadt-koeln.de",
+        "additional": ""
+      },
+      {
+        "code": "02",
+        "name": "Telefon Festnetz",
+        "value": "0221 / 221-0",
+        "additional": ""
+      },
+      {
+        "code": "04",
+        "name": "Fax",
+        "value": "0221 / 221-96343",
+        "additional": ""
+      }
+    ],
+    "information": [],
+    "urls": []
+  },
+  "internetAddresses": [],
+  "additionalInformation": [
+    { "type": "INFO_TIMES", "title": "Öffnungszeiten", "text": "..." }
+  ],
+  "communicationSystems": [],
+  "employees": [],
+  "nestedForms": [],
+  "bankAccounts": []
+}
+```
+
+Code lists (published versions checked in the XRepository on 2026-09-30;
+codes marked "live" were observed in 43 units across six territories):
+
+| Field                   | Code list                                   | Mapping to the domain contract                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `organisations[].role`  | `xzufi.zustaendigkeitsrolle` v1             | `01` Zuständige Stelle und Ansprechpunkt (live; not part of v1 any more, still published) → `RESPONSIBLE_AUTHORITY_AND_CONTACT_POINT`, `02` (live) → `RESPONSIBLE_AUTHORITY`, `03` (live) → `CONTACT_POINT`, `11` → `SINGLE_POINT_OF_CONTACT`, `19` → `OTHER_SINGLE_POINT_OF_CONTACT`, anything else → `OTHER`                       |
+| `addresses[].code`      | `xzufi.anschrifttyp` v4                     | `001` Hausanschrift (live) → `VISITING`, `005` Lieferanschrift → `DELIVERY`, `006` Postanschrift (live, carries `postbox`) → `POSTAL`, anything else → `OTHER`                                                                                                                                                                       |
+| `communications[].code` | `urn:de:xoev:codeliste:erreichbarkeit` v4.1 | `01` E-Mail (live) → `EMAIL`, `02` Telefon Festnetz (live) and `03` Telefon mobil → `PHONE`, `04` Fax (live) → `FAX`, `09` Web and `10` Web sicher → `WEB`; `05`–`08` and `11`–`15` (messenger, pager, Sonstiges, De-Mail, Kontaktformular sicher, social networks; `07` and `11` live) → `OTHER` with the published `name` as label |
+
+Notes:
+
+- `ars` and `lbId` on the unit detail only concretize the role and filter
+  contact persons and forms, none of which this project consumes; the unit is
+  requested by `q` alone and the role is taken from the service detail. With
+  an `ars` the unit is not responsible for, the unit detail still answers 200
+  but reports the role "Ansprechpunkt", so the service-detail role is the
+  authoritative one.
+- An unknown unit id yields 404 with the same body as an unknown service; the
+  integrations API passes it on as 404.
+- `GET /v2/organisationunits/titles?ars=&lbId=` ✅ returns the same reduced
+  list as `organisations[]` but answers `200 []` for an unknown service and
+  has no hierarchy switch; it is therefore not used.
+- Not consumed: `employees` (contact persons), `nestedForms`, `bankAccounts`,
+  `additionalInformation` (opening hours as free text), `communicationSystems`
+  (empty in every sampled unit), `geo`, `publisher`.
+- One request per listed unit, issued in parallel: the Köln reference service
+  names 9 units, so the public endpoint costs 10 upstream calls.
+
+Wire models: `WireServiceDescription` → `WireAuthorityReference`,
+`WireAuthorityRole`; `WireAuthority` → `WireAuthorityLocation`,
+`WireAuthorityAddress`, `WireAuthorityContact`, `WireLink`.
+Used by `GET /services/{id}/authorities`.
+
+### 1.6 Online-application links (Onlinedienste) ✅ (implemented; beta upstream)
 
 ```
 GET /v1beta2/onlineservices?ars={ars}&leikaIds={leikaKey}&nextPageToken={token}
@@ -293,7 +415,7 @@ Used by `GET /online-services`, which follows `nextPageToken` with the same
 filters until the last page and returns the complete set (a repeated token or
 more than 100 pages is treated as a contract violation).
 
-### 1.6 Deprecated endpoints
+### 1.7 Deprecated endpoints
 
 Listed on the official deprecations page (state of 2026-09-30). All were
 deprecated with release 9.17.4 (May 2026) and are scheduled for removal in
@@ -309,7 +431,7 @@ November 2026. Do not build on them.
 
 None of them is used by this project.
 
-### 1.7 Watch items
+### 1.8 Watch items
 
 - `GET /v8beta1/servicedescriptions?ars={ars}&q={query}` ✅ is a new beta
   search endpoint (release 9.21, August 2026) with a reduced request and
@@ -317,9 +439,13 @@ None of them is used by this project.
   eventually replace `/v7/servicedescriptions/{ars}` but is not yet
   productive. `/v7` remains supported and is what this project uses; no
   migration until `/v8` leaves beta.
-- `GET /v1beta2/onlineservices` is beta, see 1.5.
+- `GET /v1beta2/onlineservices` is beta, see 1.6.
+- `GET /v1beta2/onlineservices/{odId}/organisations` (beta, not exercised)
+  lists the organisation units responsible for an online service with a
+  richer role enumeration than the service detail; a candidate once it
+  leaves beta.
 
-### 1.8 Auxiliary endpoints (reference, not implemented)
+### 1.9 Auxiliary endpoints (reference, not implemented)
 
 Verified with a live request on 2026-09-30 unless noted:
 
@@ -331,7 +457,8 @@ GET /v1/personalmatters/{ars}                                         # life sit
 GET /v2/client-stats                                                  # object counts per federal state with timestamps ✅
 GET /v5/servicedescriptions/csv?ars={ars}                             # CSV export of all services of a territory ✅
 GET /v1/relations/jzufi-2-3?ars={ars}&lbids={lbid}                    # responsibilities as JZuFi 2.3.1 ✅
-GET /v5/organisationunits/detail?q={orgUnitId}&ars=&lbId=             # authority details (not exercised)
+GET /v2/organisationunits/titles?ars={ars}&lbId={lbid}                # responsible units, reduced view (see 1.5) ✅
+GET /v1/organisationunits/{id}/jzufi-2-3                              # organisation unit as JZuFi 2.3.1 ✅
 ```
 
 The CSV export answers 401 when `Accept: application/json` is sent; request it
@@ -509,24 +636,32 @@ checklist for coding agents.
 
 ## Glossary
 
-| Term          | Meaning                                                                                                 |
-| ------------- | ------------------------------------------------------------------------------------------------------- |
-| ARS           | Amtlicher Regionalschlüssel: 12-digit official territory key (state → district → municipality)          |
-| LeiKa         | Leistungskatalog: federal catalog of administrative services; `leistungsschluessel` is its 14-digit key |
-| FIM           | Föderales Informationsmanagement: standardization framework (Leistungen / Datenfelder / Prozesse)       |
-| XZuFi         | XÖV exchange standard for service descriptions and responsibilities                                     |
-| JZuFi         | JSON representation of XZuFi                                                                            |
-| XDatenfelder  | XÖV standard for form data schemas, groups and fields                                                   |
-| PVOG          | Portalverbund-Onlinegateway: central aggregator of state and federal service data                       |
-| Zuständigkeit | Responsibility: which authority handles a service in a given territory                                  |
-| Onlinedienst  | Online application service (direct submission link)                                                     |
-| Lebenslage    | Life situation category (for example moving house)                                                      |
-| Stammtext     | Federal master text of a service description, supplemented locally                                      |
-| BKG           | Federal Agency for Cartography and Geodesy (location data source)                                       |
-| FITKO         | Föderale IT-Kooperation: operator of PVOG and the FIM Portal                                            |
+| Term                 | Meaning                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------- |
+| ARS                  | Amtlicher Regionalschlüssel: 12-digit official territory key (state → district → municipality)          |
+| LeiKa                | Leistungskatalog: federal catalog of administrative services; `leistungsschluessel` is its 14-digit key |
+| FIM                  | Föderales Informationsmanagement: standardization framework (Leistungen / Datenfelder / Prozesse)       |
+| XZuFi                | XÖV exchange standard for service descriptions and responsibilities                                     |
+| JZuFi                | JSON representation of XZuFi                                                                            |
+| XDatenfelder         | XÖV standard for form data schemas, groups and fields                                                   |
+| PVOG                 | Portalverbund-Onlinegateway: central aggregator of state and federal service data                       |
+| Zuständigkeit        | Responsibility: which authority handles a service in a given territory                                  |
+| Organisationseinheit | Organisation unit: an authority or office that is responsible for a service (`PublicAuthority`)         |
+| Onlinedienst         | Online application service (direct submission link)                                                     |
+| Lebenslage           | Life situation category (for example moving house)                                                      |
+| Stammtext            | Federal master text of a service description, supplemented locally                                      |
+| BKG                  | Federal Agency for Cartography and Geodesy (location data source)                                       |
+| FITKO                | Föderale IT-Kooperation: operator of PVOG and the FIM Portal                                            |
 
 ## Changelog
 
+- **2026-09-30** (responsible authorities): `/v5/organisationunits/detail`
+  moved from the auxiliary list to implemented (1.5), requested by `q` only;
+  `organisations[]` of the service detail (1.4) is now consumed. Code lists
+  `xzufi.zustaendigkeitsrolle` (PVOG still publishes the retired code `01`),
+  `xzufi.anschrifttyp` and `urn:de:xoev:codeliste:erreichbarkeit` recorded
+  with their domain mapping. `/v2/organisationunits/titles` and
+  `/v1/organisationunits/{id}/jzufi-2-3` verified as reference endpoints.
 - **2026-09-30**: full re-verification. Legacy host `pvog.fitko.de` switched
   off upstream (404). `/v5/servicedescriptions/{ars}/detail` and
   `/v3/relations/{ars}/jzufi` moved to the deprecated list with their

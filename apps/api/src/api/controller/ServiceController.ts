@@ -1,15 +1,18 @@
 import type {
+  PublicAuthority,
   PublicServiceDescription,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { GovDataFacade } from '../../integrations/GovDataFacade';
 import { GetServiceQuery } from '../request/GetServiceQuery';
+import { ListServiceAuthoritiesQuery } from '../request/ListServiceAuthoritiesQuery';
 import { SearchServicesQuery } from '../request/SearchServicesQuery';
 
 /**
- * Plain-language search for public services within a territory, plus the
- * canonical detail view of one service description.
+ * Plain-language search for public services within a territory, the
+ * canonical detail view of one service description, and the authorities
+ * responsible for it.
  */
 @Controller('services')
 export class ServiceController {
@@ -33,6 +36,21 @@ export class ServiceController {
     @Query() query: GetServiceQuery,
   ): Promise<PublicServiceDescription> {
     return this.govDataFacade.getServiceDescription(
+      id,
+      query.regionalKey,
+      query.useRegionalHierarchy,
+    );
+  }
+
+  /**
+   * Authorities responsible for the service in the territory, with addresses, contact channels and websites.
+   */
+  @Get(':id/authorities')
+  listAuthorities(
+    @Param('id') id: string,
+    @Query() query: ListServiceAuthoritiesQuery,
+  ): Promise<PublicAuthority[]> {
+    return this.govDataFacade.listServiceAuthorities(
       id,
       query.regionalKey,
       query.useRegionalHierarchy,

@@ -1,4 +1,5 @@
 import type {
+  PublicAuthority,
   PublicServiceDescription,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
@@ -51,6 +52,32 @@ export function useService(
     queryFn: () =>
       apiClient.get<PublicServiceDescription>(
         `/services/${encodeURIComponent(id)}`,
+        { regionalKey, useRegionalHierarchy },
+      ),
+    enabled: id.length > 0 && regionalKey.length > 0,
+  });
+}
+
+/**
+ * GET /services/{id}/authorities — authorities responsible for a service
+ * within a territory, with addresses, contact channels and websites.
+ */
+export function useServiceAuthorities(
+  id: string,
+  regionalKey: string,
+  useRegionalHierarchy: boolean,
+) {
+  return useQuery({
+    queryKey: [
+      'services',
+      id,
+      'authorities',
+      regionalKey,
+      useRegionalHierarchy,
+    ],
+    queryFn: () =>
+      apiClient.get<PublicAuthority[]>(
+        `/services/${encodeURIComponent(id)}/authorities`,
         { regionalKey, useRegionalHierarchy },
       ),
     enabled: id.length > 0 && regionalKey.length > 0,

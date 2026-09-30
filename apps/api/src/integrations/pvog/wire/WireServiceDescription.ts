@@ -1,5 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { WireAuthorityReference } from './WireAuthorityReference';
 import { WireServiceSection } from './WireServiceSection';
 
 /**
@@ -84,4 +85,16 @@ export class WireServiceDescription {
   @ValidateNested({ each: true })
   @Type(() => WireServiceSection)
   sections?: WireServiceSection[];
+
+  /**
+   * Organisation units responsible for the service in the requested
+   * territory, with their roles (JSON: `organisations`). Only delivered by
+   * the detail endpoint.
+   */
+  @Expose({ name: 'organisations' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WireAuthorityReference)
+  authorities?: WireAuthorityReference[];
 }

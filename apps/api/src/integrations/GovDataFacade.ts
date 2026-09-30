@@ -5,11 +5,13 @@ import type {
   LocationSuggestion,
   OnlineService,
   ParsedMasterText,
+  PublicAuthority,
   PublicServiceDescription,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
 import { Injectable } from '@nestjs/common';
 import { FimPortalClient } from './fim/FimPortalClient';
+import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
 import { ServiceSearchOptions } from './pvog/model/ServiceSearchOptions';
 
@@ -24,6 +26,7 @@ import { ServiceSearchOptions } from './pvog/model/ServiceSearchOptions';
 export class GovDataFacade {
   constructor(
     private readonly pvogSearchClient: PvogSearchClient,
+    private readonly pvogAuthorityClient: PvogAuthorityClient,
     private readonly fimPortalClient: FimPortalClient,
   ) {}
 
@@ -61,6 +64,22 @@ export class GovDataFacade {
   ): Promise<PublicServiceDescription> {
     return this.pvogSearchClient.getServiceDescription(
       id,
+      regionalKey,
+      useRegionalHierarchy,
+    );
+  }
+
+  /**
+   * Authorities responsible for one service within a territory, with their
+   * addresses and contact channels; empty when the service names none.
+   */
+  listServiceAuthorities(
+    serviceId: string,
+    regionalKey: string,
+    useRegionalHierarchy: boolean,
+  ): Promise<PublicAuthority[]> {
+    return this.pvogAuthorityClient.listServiceAuthorities(
+      serviceId,
       regionalKey,
       useRegionalHierarchy,
     );

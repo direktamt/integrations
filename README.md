@@ -69,11 +69,11 @@ calls.
 
 ## Supported data sources
 
-| Source                 | Operator | Status                      | Used for                                                                                    |
-| ---------------------- | -------- | --------------------------- | ------------------------------------------------------------------------------------------- |
-| PVOG Suchdienst        | FITKO    | Implemented                 | Location autocomplete and resolution, service search, service details, online-service links |
-| FIM Portal             | FITKO    | Implemented                 | LeiKa service catalog, federal master texts                                                 |
-| PVOG Bereitstelldienst | FITKO    | Reference / not implemented | Bulk access to PVOG data; application-based access                                          |
+| Source                 | Operator | Status                      | Used for                                                                                                                                |
+| ---------------------- | -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| PVOG Suchdienst        | FITKO    | Implemented                 | Location autocomplete and resolution, service search, service details, responsible authorities and their contacts, online-service links |
+| FIM Portal             | FITKO    | Implemented                 | LeiKa service catalog, federal master texts                                                                                             |
+| PVOG Bereitstelldienst | FITKO    | Reference / not implemented | Bulk access to PVOG data; application-based access                                                                                      |
 
 Endpoints, parameters, verified response shapes, deprecations and known quirks
 are documented in the handbook:
@@ -81,7 +81,7 @@ are documented in the handbook:
 
 ## Current capabilities
 
-The integrations API exposes nine read-only endpoints:
+The integrations API exposes ten read-only endpoints:
 
 | Endpoint                                            | Upstream        | Purpose                                                                     |
 | --------------------------------------------------- | --------------- | --------------------------------------------------------------------------- |
@@ -90,6 +90,7 @@ The integrations API exposes nine read-only endpoints:
 | `GET /locations/{regionalKey}`                      | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                                      |
 | `GET /services?regionalKey=&query=`                 | PVOG Suchdienst | Plain-language service search within a territory                            |
 | `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections                           |
+| `GET /services/{id}/authorities?regionalKey=`       | PVOG Suchdienst | Authorities responsible for the service, with addresses and contacts        |
 | `GET /online-services?regionalKey=`                 | PVOG Suchdienst | Online-application links for a territory (all upstream pages are collected) |
 | `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog                             |
 | `GET /catalog/{serviceCatalogKey}`                  | FIM Portal      | One catalog entry                                                           |

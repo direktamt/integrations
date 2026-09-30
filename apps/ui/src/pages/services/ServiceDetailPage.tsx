@@ -1,19 +1,24 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Box, Button, Stack, Typography } from '@mui/material';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { useService } from '../../api/queries/useServiceQueries';
+import {
+  useService,
+  useServiceAuthorities,
+} from '../../api/queries/useServiceQueries';
 import { JsonViewer } from '../../components/JsonViewer';
 import { KeyChip } from '../../components/KeyChip';
 import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { parseDefaultTrueBoolean } from './DefaultTrueBoolean';
+import { ServiceAuthorityList } from './ServiceAuthorityList';
 import { ServiceSectionList } from './ServiceSectionList';
 import { deriveServiceTitle } from './ServiceTitle';
 
 /**
- * GET /services/{id}: deep-linkable detail page of one service description
- * for a territory. `useRegionalHierarchy` follows the same URL semantics as
- * the search page (absent means true).
+ * GET /services/{id} and GET /services/{id}/authorities: deep-linkable
+ * detail page of one service description for a territory, with the
+ * authorities responsible for it. `useRegionalHierarchy` follows the same
+ * URL semantics as the search page (absent means true).
  */
 export function ServiceDetailPage() {
   const { id = '' } = useParams();
@@ -25,6 +30,11 @@ export function ServiceDetailPage() {
   );
 
   const serviceQuery = useService(id, regionalKey, useRegionalHierarchy);
+  const authoritiesQuery = useServiceAuthorities(
+    id,
+    regionalKey,
+    useRegionalHierarchy,
+  );
 
   return (
     <>
@@ -85,6 +95,26 @@ export function ServiceDetailPage() {
                 Sections
               </Typography>
               <ServiceSectionList sections={service.sections} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Responsible authorities
+              </Typography>
+              <QueryStateGate
+                query={authoritiesQuery}
+                isEmpty={(authorities) => authorities.length === 0}
+                emptyMessage="No responsible authority is published for this service in the territory."
+              >
+                {(authorities) => (
+                  <Stack spacing={2}>
+                    <ServiceAuthorityList authorities={authorities} />
+                    <JsonViewer
+                      data={authorities}
+                      title="Raw authorities response"
+                    />
+                  </Stack>
+                )}
+              </QueryStateGate>
             </Box>
             <JsonViewer data={service} title="Raw response" />
           </Stack>

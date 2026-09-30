@@ -1,9 +1,15 @@
+export type { AuthorityAddress } from './AuthorityAddress';
+export { AuthorityAddressType } from './AuthorityAddressType';
+export type { AuthorityContact } from './AuthorityContact';
+export { AuthorityContactType } from './AuthorityContactType';
+export { AuthorityRole } from './AuthorityRole';
 export type { CatalogEntry } from './CatalogEntry';
 export type { CatalogSearchResult } from './CatalogSearchResult';
 export type { Location } from './Location';
 export type { LocationSuggestion } from './LocationSuggestion';
 export type { OnlineService } from './OnlineService';
 export type { ParsedMasterText } from './ParsedMasterText';
+export type { PublicAuthority } from './PublicAuthority';
 export type { PublicServiceDescription } from './PublicServiceDescription';
 export type { ServiceSearchResult } from './ServiceSearchResult';
 export type { ServiceSection } from './ServiceSection';

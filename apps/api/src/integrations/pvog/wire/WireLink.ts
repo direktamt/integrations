@@ -2,7 +2,8 @@ import { Expose } from 'class-transformer';
 import { IsOptional, IsString } from 'class-validator';
 
 /**
- * PVOG wire model: a link published inside a service-description section.
+ * PVOG wire model: a published link (`uri`, `title`, `description`) — inside
+ * a service-description section or attached to an organisation unit.
  */
 export class WireLink {
   /**
