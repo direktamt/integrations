@@ -15,8 +15,9 @@ interface ServiceSearchFormProps {
 }
 
 /**
- * Exposes every GET /services parameter; defaults match the integrations API
- * (optional params are sent only when set).
+ * Exposes every GET /services parameter; defaults match the integrations API.
+ * The boolean options default to true and are always submitted explicitly;
+ * other optional params are sent only when set.
  */
 export function ServiceSearchForm({
   initialValues,
@@ -26,10 +27,10 @@ export function ServiceSearchForm({
   const [query, setQuery] = useState(initialValues.query);
   const [size, setSize] = useState(initialValues.size?.toString() ?? '');
   const [fuzzySearch, setFuzzySearch] = useState(
-    initialValues.fuzzySearch ?? false,
+    initialValues.fuzzySearch ?? true,
   );
   const [useRegionalHierarchy, setUseRegionalHierarchy] = useState(
-    initialValues.useRegionalHierarchy ?? false,
+    initialValues.useRegionalHierarchy ?? true,
   );
   const [lifeSituationCodes, setLifeSituationCodes] = useState<string[]>(
     initialValues.lifeSituationCodes ?? [],
@@ -43,8 +44,8 @@ export function ServiceSearchForm({
       query,
       size: size ? Number(size) : undefined,
       page: 0,
-      fuzzySearch: fuzzySearch || undefined,
-      useRegionalHierarchy: useRegionalHierarchy || undefined,
+      fuzzySearch,
+      useRegionalHierarchy,
       lifeSituationCodes: lifeSituationCodes.length
         ? lifeSituationCodes
         : undefined,

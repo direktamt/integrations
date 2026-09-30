@@ -1,5 +1,6 @@
 import { ServiceSectionType } from '@direktamt/integrations-contracts';
 import { FetchStub } from '../../../test/FetchStub';
+import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
 import { PvogSearchClient } from './PvogSearchClient';
 
 /**
@@ -228,5 +229,81 @@ describe('PvogSearchClient', () => {
         lastUpdatedAt: '2026-01-01T00:00:00Z',
       },
     ]);
+  });
+  describe('online-service pagination', () => {
+    const service = (id: string) => ({
+      id,
+      name: id,
+      links: [],
+      serviceDescriptions: [
+        {
+          lbId: 'L100002.LB.1',
+          ars: ['053150000000'],
+          leikakeys: ['99115005104000'],
+        },
+      ],
+    });
+    const page = (token: string, ...ids: string[]) =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            nextPageToken: token,
+            hits: ids.length,
+            totalHits: ids.length,
+            onlineservices: ids.map(service),
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+
+    it('requests once when the first page has no next token', async () => {
+      fetchStub.respondWith(() => page('', 'L100002.OD.1'));
+
+      const services = await client.listOnlineServices('053150000000');
+
+      expect(fetchStub.calls).toHaveLength(1);
+      expect(fetchStub.lastUrl().searchParams.has('nextPageToken')).toBe(false);
+      expect(services.map((s) => s.id)).toEqual(['L100002.OD.1']);
+    });
+
+    it('follows the next-page token and merges all pages', async () => {
+      fetchStub.respondWith((url) =>
+        new URL(url).searchParams.get('nextPageToken') === 'abc'
+          ? page('', 'L100002.OD.2')
+          : page('abc', 'L100002.OD.1'),
+      );
+
+      const services = await client.listOnlineServices('053150000000');
+
+      expect(fetchStub.calls).toHaveLength(2);
+      expect(services.map((s) => s.id)).toEqual([
+        'L100002.OD.1',
+        'L100002.OD.2',
+      ]);
+    });
+
+    it('keeps the territory and LeiKa filters on every page', async () => {
+      fetchStub.respondWith((url) =>
+        new URL(url).searchParams.get('nextPageToken') === 'abc'
+          ? page('', 'L100002.OD.2')
+          : page('abc', 'L100002.OD.1'),
+      );
+
+      await client.listOnlineServices('053150000000', ['99115005104000']);
+
+      const second = new URL(fetchStub.calls[1].url).searchParams;
+      expect(second.get('ars')).toBe('053150000000');
+      expect(second.getAll('leikaIds')).toEqual(['99115005104000']);
+      expect(second.get('nextPageToken')).toBe('abc');
+    });
+
+    it('stops with a contract violation when a token repeats', async () => {
+      fetchStub.respondWith(() => page('abc', 'L100002.OD.1'));
+
+      await expect(
+        client.listOnlineServices('053150000000'),
+      ).rejects.toBeInstanceOf(UpstreamContractViolationException);
+      expect(fetchStub.calls).toHaveLength(2);
+    });
   });
 });

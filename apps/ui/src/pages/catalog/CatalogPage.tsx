@@ -1,6 +1,6 @@
 import type { CatalogEntry } from '@direktamt/integrations-contracts';
 import { Button, Stack, TablePagination, TextField } from '@mui/material';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useSearchCatalog } from '../../api/queries/useCatalogQueries';
 import { DataTable } from '../../components/DataTable';
@@ -26,8 +26,18 @@ export function CatalogPage() {
     ? Number(searchParams.get('offset'))
     : 0;
   const selectedKey = searchParams.get('selected') ?? '';
+  const limitParam = searchParams.get('limit') ?? '';
   const [termInput, setTermInput] = useState(term);
-  const [limitInput, setLimitInput] = useState(searchParams.get('limit') ?? '');
+  const [limitInput, setLimitInput] = useState(limitParam);
+
+  // Committed URL values are the source of truth: re-sync the drafts when the
+  // URL changes through Back/Forward, a deep link or programmatic navigation.
+  useEffect(() => {
+    setTermInput(term);
+  }, [term]);
+  useEffect(() => {
+    setLimitInput(limitParam);
+  }, [limitParam]);
 
   const catalogQuery = useSearchCatalog(term, limit, offset);
 

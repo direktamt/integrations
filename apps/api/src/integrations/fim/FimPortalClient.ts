@@ -57,7 +57,9 @@ export class FimPortalClient extends BaseHttpClient {
   }
 
   /**
-   * Federal master text (parsed XZuFi); fallback when no local description exists.
+   * Parsed federal master text as published by the FIM Portal. The upstream
+   * declares this representation unstable, so it is passed through without
+   * a wire model.
    */
   async getParsedMasterText(
     editorialOfficeId: string,

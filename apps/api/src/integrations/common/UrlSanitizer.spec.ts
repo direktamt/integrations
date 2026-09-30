@@ -18,4 +18,11 @@ describe('sanitizeUrlForLogging', () => {
   it('cuts at the first question mark when the input is not a valid URL', () => {
     expect(sanitizeUrlForLogging('not a url?q=secret')).toBe('not a url');
   });
+
+  it('drops query and fragment of a malformed URL in either order', () => {
+    expect(sanitizeUrlForLogging('not a url?q=secret#frag=1')).toBe(
+      'not a url',
+    );
+    expect(sanitizeUrlForLogging('not a url#frag?q=secret')).toBe('not a url');
+  });
 });

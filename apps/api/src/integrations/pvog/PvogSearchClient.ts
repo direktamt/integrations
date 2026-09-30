@@ -10,9 +10,11 @@ import {
 import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../config';
 import { BaseHttpClient } from '../common/BaseHttpClient';
+import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
 import { ServiceSearchOptions } from './model/ServiceSearchOptions';
 import { WireLocationDetails } from './wire/WireLocationDetails';
 import { WireLocationSuggestion } from './wire/WireLocationSuggestion';
+import { WireOnlineService } from './wire/WireOnlineService';
 import { WireOnlineServicesResponse } from './wire/WireOnlineServicesResponse';
 import { WireServiceDescription } from './wire/WireServiceDescription';
 import { WireServiceSearchResponse } from './wire/WireServiceSearchResponse';
@@ -32,6 +34,12 @@ export class PvogSearchClient extends BaseHttpClient {
    * against an unbounded upstream response.
    */
   private static readonly LOCATION_RESULT_CAP = 10;
+
+  /**
+   * Upper bound on upstream pages followed by listOnlineServices; guards
+   * against an upstream that keeps producing new page tokens.
+   */
+  private static readonly MAX_ONLINE_SERVICE_PAGES = 100;
 
   /**
    * City / district / postal-code autocomplete.
@@ -134,21 +142,46 @@ export class PvogSearchClient extends BaseHttpClient {
 
   /**
    * Online application services (direct submission links) for a territory.
+   * The upstream endpoint is paginated (`nextPageToken`); this method follows
+   * the cursor with the same filters until the last page and returns the
+   * complete set. A repeated token or an excessive number of pages is treated
+   * as a contract violation instead of looping forever.
    */
   async listOnlineServices(
     regionalKey: string,
     serviceCatalogKeys?: string[],
   ): Promise<OnlineService[]> {
-    const wire = await this.getModel(
-      WireOnlineServicesResponse,
-      '/v1beta2/onlineservices',
-      {
+    const path = '/v1beta2/onlineservices';
+    const items: WireOnlineService[] = [];
+    const seenTokens = new Set<string>();
+    let nextPageToken: string | undefined;
+
+    do {
+      const page = await this.getModel(WireOnlineServicesResponse, path, {
         ars: regionalKey,
         leikaIds: serviceCatalogKeys,
-      },
-    );
+        nextPageToken,
+      });
 
-    return (wire.onlineServices ?? []).map((item) => ({
+      items.push(...(page.onlineServices ?? []));
+      nextPageToken = page.nextPageToken || undefined;
+
+      if (nextPageToken !== undefined) {
+        if (seenTokens.has(nextPageToken)) {
+          throw new UpstreamContractViolationException(this.baseUrl + path, [
+            'nextPageToken repeated a previously seen value',
+          ]);
+        }
+        if (seenTokens.size >= PvogSearchClient.MAX_ONLINE_SERVICE_PAGES) {
+          throw new UpstreamContractViolationException(this.baseUrl + path, [
+            `more than ${PvogSearchClient.MAX_ONLINE_SERVICE_PAGES} pages`,
+          ]);
+        }
+        seenTokens.add(nextPageToken);
+      }
+    } while (nextPageToken !== undefined);
+
+    return items.map((item) => ({
       id: item.id,
       name: item.name,
       description: item.description,

@@ -6,20 +6,23 @@ import { JsonViewer } from '../../components/JsonViewer';
 import { KeyChip } from '../../components/KeyChip';
 import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
+import { parseDefaultTrueBoolean } from './DefaultTrueBoolean';
 import { ServiceSectionList } from './ServiceSectionList';
 import { deriveServiceTitle } from './ServiceTitle';
 
 /**
- * GET /services/{id} — deep-linkable detail page of one service
- * description for a territory.
+ * GET /services/{id}: deep-linkable detail page of one service description
+ * for a territory. `useRegionalHierarchy` follows the same URL semantics as
+ * the search page (absent means true).
  */
 export function ServiceDetailPage() {
   const { id = '' } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const regionalKey = searchParams.get('regionalKey') ?? '';
-  const useRegionalHierarchy =
-    searchParams.get('useRegionalHierarchy') === 'true' || undefined;
+  const useRegionalHierarchy = parseDefaultTrueBoolean(
+    searchParams.get('useRegionalHierarchy'),
+  );
 
   const serviceQuery = useService(id, regionalKey, useRegionalHierarchy);
 

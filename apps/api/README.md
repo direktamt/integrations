@@ -78,10 +78,27 @@ implementation details; caching or persistence may change behind the facade
 without changing its consumers. Response models exposed by the API live in
 `packages/contracts`; do not copy them into the application or a consumer.
 
-Each upstream response is transformed into a wire model
+Each structured upstream response is transformed into a wire model
 (`integrations/*/wire/`) with `excludeExtraneousValues` and validated before
 it is mapped to a response contract. A wire field without `@Expose` metadata
-is silently dropped, so every consumed field must carry it.
+is silently dropped, so every consumed field must carry it. The FIM
+`parsed-xzufi` master text is the intentional exception: `getRawJson` passes
+it through unvalidated because the upstream declares that representation
+unstable.
+
+`GET /online-services` follows PVOG's `nextPageToken` pagination internally
+(same `ars` and `leikaIds` filters on every page, repeated tokens and runaway
+page counts rejected as contract violations) and returns the complete set;
+the public contract stays `OnlineService[]`.
+
+## Request validation
+
+Query DTOs in `api/request/` validate the documented upstream limits locally
+so that invalid input is answered with 400 before any upstream call: service
+search `size` 5–9999 and `page` 0–100, catalog `limit` 1–200, plus the
+required-field and type rules. Remaining upstream 4xx responses other than
+404 are mapped to 502 because, once the known limits are checked here, they
+indicate a contract problem rather than user input.
 
 ## Exception handling
 
@@ -105,8 +122,9 @@ values such as search terms, postal codes or regional keys are never logged.
 `npm run test --workspace @direktamt/integrations-api` runs Jest unit tests
 against a stubbed `fetch` (`test/FetchStub.ts`); they never reach the
 network. The tests cover `BaseHttpClient` (query building, parsing,
-validation, error mapping, timeout), the PVOG and FIM mapping code with small
-synthetic fixtures, and the status mapping of `UpstreamExceptionFilter`.
+validation, error mapping, timeout), the PVOG and FIM mapping code including
+online-service pagination with small synthetic fixtures, the request DTO
+limits, and the status mapping of `UpstreamExceptionFilter`.
 
 Live verification of the upstream contracts is a manual procedure, see
 [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md).

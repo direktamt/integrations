@@ -158,7 +158,8 @@ GET /v7/servicedescriptions/{ars}?q={query}
 | `ignoreLeikaTypes`   | `[]`    | exclude LeiKa typisation codes                                         |
 | `applyDynamicParams` | false   | extend online-service links with dynamic query parameters (XZuFi)      |
 
-A `size` below 5 is rejected with 400.
+A `size` below 5 is rejected with 400. The integrations API validates `size`
+(5–9999) and `page` (0–100) locally and answers 400 before calling upstream.
 
 Request:
 
@@ -288,7 +289,9 @@ LeiKa key where possible.
 
 Wire models: `WireOnlineServicesResponse`, `WireOnlineService`,
 `WireOnlineServiceLink`, `WireOnlineServiceDescriptionRef`.
-Used by `GET /online-services`.
+Used by `GET /online-services`, which follows `nextPageToken` with the same
+filters until the last page and returns the complete set (a repeated token or
+more than 100 pages is treated as a contract violation).
 
 ### 1.6 Deprecated endpoints
 
@@ -364,7 +367,8 @@ API and is silently ignored; the response is then the unfiltered list in
 default order. Further filters: `leistungsschluessel` (partial key), `title`,
 `leistungstyp`, `typisierung`, `freigabe_status`, `updated_since`, `sdg`,
 `order_by` and others, see the OpenAPI document. `limit` defaults to 200 and
-is capped at 200.
+is capped at 200; the integrations API validates its own `limit` (1–200)
+locally and answers 400 before calling upstream.
 
 Request:
 

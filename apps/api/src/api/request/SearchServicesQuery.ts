@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 
@@ -28,19 +29,21 @@ export class SearchServicesQuery {
   query!: string;
 
   /**
-   * Page size; the upstream API requires at least 5.
+   * Page size; the upstream API accepts 5 to 9999.
    */
   @Type(() => Number)
   @IsInt()
   @Min(5)
+  @Max(9999)
   size: number = 10;
 
   /**
-   * Zero-based page index.
+   * Zero-based page index; the upstream API accepts 0 to 100.
    */
   @Type(() => Number)
   @IsInt()
   @Min(0)
+  @Max(100)
   page: number = 0;
 
   /**

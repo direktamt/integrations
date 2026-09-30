@@ -6,14 +6,19 @@ import {
 import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
+import {
+  parseDefaultTrueBoolean,
+  serializeDefaultTrueBoolean,
+} from './DefaultTrueBoolean';
 import { ServiceResultList } from './ServiceResultList';
 import { ServiceSearchForm } from './ServiceSearchForm';
 
 const DEFAULT_SIZE = 20;
 
 /**
- * GET /services — the core "I am in {city} and want to {task}" flow.
- * All search state lives in URL params.
+ * GET /services: plain-language service search within a territory. All
+ * search state lives in URL params; the boolean options follow the API
+ * defaults (absent means true, only an explicit `false` is stored).
  */
 export function ServicesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,9 +32,10 @@ export function ServicesPage() {
     page: searchParams.has('page')
       ? Number(searchParams.get('page'))
       : undefined,
-    fuzzySearch: searchParams.get('fuzzySearch') === 'true' || undefined,
-    useRegionalHierarchy:
-      searchParams.get('useRegionalHierarchy') === 'true' || undefined,
+    fuzzySearch: parseDefaultTrueBoolean(searchParams.get('fuzzySearch')),
+    useRegionalHierarchy: parseDefaultTrueBoolean(
+      searchParams.get('useRegionalHierarchy'),
+    ),
     lifeSituationCodes:
       searchParams.get('lifeSituationCodes')?.split(',').filter(Boolean) ??
       undefined,
@@ -44,8 +50,14 @@ export function ServicesPage() {
     next.set('query', values.query);
     if (values.size !== undefined) next.set('size', String(values.size));
     if (values.page) next.set('page', String(values.page));
-    if (values.fuzzySearch) next.set('fuzzySearch', 'true');
-    if (values.useRegionalHierarchy) next.set('useRegionalHierarchy', 'true');
+    const fuzzySearch = serializeDefaultTrueBoolean(values.fuzzySearch);
+    if (fuzzySearch) next.set('fuzzySearch', fuzzySearch);
+    const useRegionalHierarchy = serializeDefaultTrueBoolean(
+      values.useRegionalHierarchy,
+    );
+    if (useRegionalHierarchy) {
+      next.set('useRegionalHierarchy', useRegionalHierarchy);
+    }
     if (values.lifeSituationCodes?.length)
       next.set('lifeSituationCodes', values.lifeSituationCodes.join(','));
     if (values.validDate) next.set('validDate', values.validDate);
@@ -73,6 +85,7 @@ export function ServicesPage() {
           <ServiceResultList
             result={result}
             regionalKey={params.regionalKey}
+            useRegionalHierarchy={params.useRegionalHierarchy ?? true}
             page={params.page ?? 0}
             size={params.size ?? DEFAULT_SIZE}
             onPageChange={(page) => applyParams({ ...params, page })}

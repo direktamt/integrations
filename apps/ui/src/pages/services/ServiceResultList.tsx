@@ -6,11 +6,13 @@ import { Stack, TablePagination } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { DataTable } from '../../components/DataTable';
 import { KeyChip } from '../../components/KeyChip';
+import { serializeDefaultTrueBoolean } from './DefaultTrueBoolean';
 import { deriveServiceTitle } from './ServiceTitle';
 
 interface ServiceResultListProps {
   result: ServiceSearchResult;
   regionalKey: string;
+  useRegionalHierarchy: boolean;
   page: number;
   size: number;
   onPageChange: (page: number) => void;
@@ -18,11 +20,13 @@ interface ServiceResultListProps {
 
 /**
  * Search results with server-side pagination; row click opens the
- * deep-linkable detail page.
+ * deep-linkable detail page and carries the territory context along
+ * (regional key, and `useRegionalHierarchy=false` when the search disabled it).
  */
 export function ServiceResultList({
   result,
   regionalKey,
+  useRegionalHierarchy,
   page,
   size,
   onPageChange,
@@ -58,8 +62,11 @@ export function ServiceResultList({
       getRowKey={(service, index) => service.id ?? String(index)}
       onRowClick={(service) => {
         if (service.id) {
+          const search = new URLSearchParams({ regionalKey });
+          const hierarchy = serializeDefaultTrueBoolean(useRegionalHierarchy);
+          if (hierarchy) search.set('useRegionalHierarchy', hierarchy);
           void navigate(
-            `/services/${encodeURIComponent(service.id)}?regionalKey=${regionalKey}`,
+            `/services/${encodeURIComponent(service.id)}?${search.toString()}`,
           );
         }
       }}

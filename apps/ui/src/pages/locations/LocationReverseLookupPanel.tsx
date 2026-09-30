@@ -6,7 +6,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useLocation } from '../../api/queries/useLocationQueries';
 import { QueryStateGate } from '../../components/QueryStateGate';
@@ -20,6 +20,12 @@ export function LocationReverseLookupPanel() {
   const [searchParams, setSearchParams] = useSearchParams();
   const regionalKey = searchParams.get('lookupRegionalKey') ?? '';
   const [input, setInput] = useState(regionalKey);
+
+  // Committed URL values are the source of truth: re-sync the drafts when the
+  // URL changes through Back/Forward, a deep link or programmatic navigation.
+  useEffect(() => {
+    setInput(regionalKey);
+  }, [regionalKey]);
 
   const locationQuery = useLocation(regionalKey);
 

@@ -7,6 +7,8 @@ import { apiClient } from '../ApiClient';
 
 /**
  * Parameters of GET /services, mirroring integrations API SearchServicesQuery.
+ * The boolean options are real booleans: `false` is sent explicitly because
+ * the API defaults both of them to true.
  */
 export interface SearchServicesParams {
   regionalKey: string;
@@ -42,7 +44,7 @@ export function useSearchServices(params: SearchServicesParams) {
 export function useService(
   id: string,
   regionalKey: string,
-  useRegionalHierarchy?: boolean,
+  useRegionalHierarchy: boolean,
 ) {
   return useQuery({
     queryKey: ['services', id, regionalKey, useRegionalHierarchy],

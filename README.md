@@ -24,9 +24,12 @@ This project provides one normalized boundary over those sources:
 
 - German identifiers and field names are translated once, at the boundary
   (an ARS becomes `regionalKey`, a LeiKa key becomes `serviceCatalogKey`).
-- Every upstream response is validated against an explicit wire model before
-  it is mapped, so contract drift surfaces as a typed error instead of
-  undefined behaviour downstream.
+- Structured upstream responses used by the normalized API are validated
+  against explicit wire models before mapping, so contract drift surfaces as
+  a typed error instead of undefined behaviour downstream. The FIM
+  `parsed-xzufi` endpoint is the one intentional exception: it is exposed as
+  an unvalidated pass-through because its upstream representation is
+  explicitly unstable.
 - Consumers depend on one HTTP API and one set of TypeScript response models
   rather than on individual upstream endpoints.
 
@@ -47,9 +50,13 @@ integrations API (NestJS)
   integration adapters.
 - **Anti-corruption layer**: one adapter per upstream API behind a single
   `GovDataFacade`; controllers never see an upstream client.
-- **Wire-model validation**: every upstream payload is transformed into a
-  declared wire model and validated before mapping (class-transformer and
-  class-validator).
+- **Wire-model validation**: structured upstream payloads are transformed
+  into declared wire models and validated before mapping (class-transformer
+  and class-validator); the FIM master-text pass-through is the documented
+  exception.
+- **Request validation**: documented upstream limits (page size, page index,
+  catalog limit) are validated locally, so invalid input is answered with 400
+  before any upstream call.
 - **Stable English domain contracts**: the API speaks English identifiers
   only; German appears in upstream query names, URL paths and data content.
 - **Shared TypeScript contracts** (`packages/contracts`): the response models
@@ -78,17 +85,17 @@ are documented in the handbook:
 
 The integrations API exposes nine read-only endpoints:
 
-| Endpoint                                            | Upstream        | Purpose                                               |
-| --------------------------------------------------- | --------------- | ----------------------------------------------------- |
-| `GET /locations/suggestions?query=`                 | PVOG Suchdienst | Autocomplete for city, district or postal code        |
-| `GET /locations?cityName=&postalCode=`              | PVOG Suchdienst | Resolve a city name or postal code to territories     |
-| `GET /locations/{regionalKey}`                      | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                |
-| `GET /services?regionalKey=&query=`                 | PVOG Suchdienst | Plain-language service search within a territory      |
-| `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections     |
-| `GET /online-services?regionalKey=`                 | PVOG Suchdienst | Online-application links for a territory              |
-| `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog       |
-| `GET /catalog/{serviceCatalogKey}`                  | FIM Portal      | One catalog entry                                     |
-| `GET /master-texts/{editorialOfficeId}/{serviceId}` | FIM Portal      | Parsed federal master text (unvalidated pass-through) |
+| Endpoint                                            | Upstream        | Purpose                                                                     |
+| --------------------------------------------------- | --------------- | --------------------------------------------------------------------------- |
+| `GET /locations/suggestions?query=`                 | PVOG Suchdienst | Autocomplete for city, district or postal code                              |
+| `GET /locations?cityName=&postalCode=`              | PVOG Suchdienst | Resolve a city name or postal code to territories                           |
+| `GET /locations/{regionalKey}`                      | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                                      |
+| `GET /services?regionalKey=&query=`                 | PVOG Suchdienst | Plain-language service search within a territory                            |
+| `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections                           |
+| `GET /online-services?regionalKey=`                 | PVOG Suchdienst | Online-application links for a territory (all upstream pages are collected) |
+| `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog                             |
+| `GET /catalog/{serviceCatalogKey}`                  | FIM Portal      | One catalog entry                                                           |
+| `GET /master-texts/{editorialOfficeId}/{serviceId}` | FIM Portal      | Parsed federal master text (unvalidated pass-through)                       |
 
 The API serves an OpenAPI document and Swagger UI at `/docs`.
 

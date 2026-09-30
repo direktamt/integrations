@@ -4,9 +4,9 @@ import { GovDataFacade } from '../../integrations/GovDataFacade';
 import { GetMasterTextQuery } from '../request/GetMasterTextQuery';
 
 /**
- * Federal master texts (parsed XZuFi) — the fallback service description
- * when no local one exists. Keyed by editorial office + service, not by
- * service catalog key, hence a resource of its own.
+ * Parsed federal master texts (XZuFi) as published by the FIM Portal. Keyed
+ * by editorial office + service, not by service catalog key, hence a
+ * resource of its own.
  */
 @Controller('master-texts')
 export class MasterTextController {

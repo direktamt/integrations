@@ -6,7 +6,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useSuggestLocations } from '../../api/queries/useLocationQueries';
 
@@ -20,9 +20,13 @@ export function LocationSuggestPanel() {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('suggestQuery') ?? '';
   const [input, setInput] = useState(query);
+  // Last value this panel wrote to the URL; lets the sync effect tell its own
+  // debounced writes apart from external navigation (Back/Forward, deep link).
+  const lastCommitted = useRef(query);
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      lastCommitted.current = input;
       setSearchParams(
         (previous) => {
           const next = new URLSearchParams(previous);
@@ -38,6 +42,13 @@ export function LocationSuggestPanel() {
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [input, setSearchParams]);
+
+  useEffect(() => {
+    if (query !== lastCommitted.current) {
+      lastCommitted.current = query;
+      setInput(query);
+    }
+  }, [query]);
 
   const suggestionsQuery = useSuggestLocations(query);
 

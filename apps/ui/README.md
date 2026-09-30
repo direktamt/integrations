@@ -75,7 +75,9 @@ npm run build --workspace @direktamt/integrations-ui
 npm run preview --workspace @direktamt/integrations-ui
 ```
 
-No UI test runner is currently configured.
+No UI test runner is currently configured. URL-state behaviour (refresh,
+copied deep links, Back/Forward, the boolean defaults) is verified manually in
+the browser against the running API.
 
 ## Routes and endpoint coverage
 
@@ -91,7 +93,10 @@ No UI test runner is currently configured.
 
 All request-defining state is stored in URL search parameters so views survive
 refresh, can be shared, and work with browser Back and Forward navigation.
-Local state is limited to drafts before submit or debounce.
+Local state is limited to drafts before submit or debounce; drafts
+re-synchronize from the URL whenever it changes (Back, Forward, deep link,
+programmatic navigation), so the visible form always matches the committed
+request.
 
 ### Locations
 
@@ -110,18 +115,26 @@ other panels.
 The service search exposes every `GET /services` parameter: `regionalKey` and
 `query` are required; `size`, `page`, `fuzzySearch`,
 `useRegionalHierarchy`, `lifeSituationCodes`, and `validDate` are optional.
-Defaults must match the API.
+Defaults match the API: `fuzzySearch` and `useRegionalHierarchy` default to
+`true`, an absent URL parameter means `true`, and only an explicit
+`fuzzySearch=false` or `useRegionalHierarchy=false` is stored in the URL. The
+checkboxes and the outgoing request always reflect the effective value; an
+unchecked box sends `false` explicitly.
 
 Results use server-side pagination and show titles, service catalog keys, and
 section counts. Selecting a row opens the deep-linkable
-`/services/:id?regionalKey=...` detail page. The detail page renders all
-sections, links, official keys, sanitized upstream HTML, and the raw response.
+`/services/:id?regionalKey=...` detail page; when the search ran with
+`useRegionalHierarchy=false`, the detail link carries that parameter along
+and the detail page applies the same absent-means-true semantics. The detail
+page renders all sections, links, official keys, sanitized upstream HTML, and
+the raw response.
 
 ### Online services
 
 The `/online-services` form requires `regionalKey` and accepts optional
-comma-separated `serviceCatalogKeys`. Results show name, description, service
-catalog keys, external links, and `lastUpdatedAt`.
+comma-separated `serviceCatalogKeys`. The API collects all upstream pages, so
+the list is complete for the territory. Results show name, description,
+service catalog keys, external links, and `lastUpdatedAt`.
 
 ### Catalog
 

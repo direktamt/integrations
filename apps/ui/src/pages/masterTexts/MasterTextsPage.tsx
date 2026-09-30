@@ -1,5 +1,5 @@
 import { Alert, Button, Stack, TextField } from '@mui/material';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useMasterText } from '../../api/queries/useMasterTextQueries';
 import { JsonViewer } from '../../components/JsonViewer';
@@ -10,8 +10,8 @@ import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
 const DEFAULT_SOURCE = 'primary';
 
 /**
- * GET /master-texts/{editorialOfficeId}/{serviceId} — upstream
- * pass-through JSON, rendered raw; a 404 is an inline state.
+ * GET /master-texts/{editorialOfficeId}/{serviceId}: upstream pass-through
+ * JSON, rendered raw; a 404 is an inline state.
  */
 export function MasterTextsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,6 +21,18 @@ export function MasterTextsPage() {
   const [officeInput, setOfficeInput] = useState(editorialOfficeId);
   const [serviceInput, setServiceInput] = useState(serviceId);
   const [sourceInput, setSourceInput] = useState(source || DEFAULT_SOURCE);
+
+  // Committed URL values are the source of truth: re-sync the drafts when the
+  // URL changes through Back/Forward, a deep link or programmatic navigation.
+  useEffect(() => {
+    setOfficeInput(editorialOfficeId);
+  }, [editorialOfficeId]);
+  useEffect(() => {
+    setServiceInput(serviceId);
+  }, [serviceId]);
+  useEffect(() => {
+    setSourceInput(source || DEFAULT_SOURCE);
+  }, [source]);
 
   const masterTextQuery = useMasterText(
     editorialOfficeId,
@@ -42,7 +54,7 @@ export function MasterTextsPage() {
     <>
       <PageHeader
         title="Master texts"
-        description="Parsed federal master texts (XZuFi) — the fallback service description."
+        description="Parsed federal master texts (XZuFi) as published by the FIM Portal; unvalidated upstream pass-through."
       />
       <form onSubmit={submit}>
         <Stack direction="row" spacing={2} sx={{ mb: 2 }}>

@@ -1,6 +1,6 @@
 import type { OnlineService } from '@direktamt/integrations-contracts';
 import { Button, Link, Stack, TextField } from '@mui/material';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useOnlineServices } from '../../api/queries/useOnlineServiceQueries';
 import { DataTable } from '../../components/DataTable';
@@ -17,11 +17,20 @@ import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
 export function OnlineServicesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const regionalKey = searchParams.get('regionalKey') ?? '';
-  const serviceCatalogKeys =
-    searchParams.get('serviceCatalogKeys')?.split(',').filter(Boolean) ?? [];
+  const serviceCatalogKeysParam = searchParams.get('serviceCatalogKeys') ?? '';
+  const serviceCatalogKeys = serviceCatalogKeysParam.split(',').filter(Boolean);
   const [keyInput, setKeyInput] = useState(regionalKey);
   const [catalogKeysInput, setCatalogKeysInput] =
     useState<string[]>(serviceCatalogKeys);
+
+  // Committed URL values are the source of truth: re-sync the drafts when the
+  // URL changes through Back/Forward, a deep link or programmatic navigation.
+  useEffect(() => {
+    setKeyInput(regionalKey);
+  }, [regionalKey]);
+  useEffect(() => {
+    setCatalogKeysInput(serviceCatalogKeysParam.split(',').filter(Boolean));
+  }, [serviceCatalogKeysParam]);
 
   const onlineServicesQuery = useOnlineServices(
     regionalKey,

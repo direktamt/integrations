@@ -6,7 +6,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useResolveLocation } from '../../api/queries/useLocationQueries';
 import { QueryStateGate } from '../../components/QueryStateGate';
@@ -24,6 +24,15 @@ export function LocationResolvePanel() {
   const [cityInput, setCityInput] = useState(cityName);
   const [postalInput, setPostalInput] = useState(postalCode);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Committed URL values are the source of truth: re-sync the drafts when the
+  // URL changes through Back/Forward, a deep link or programmatic navigation.
+  useEffect(() => {
+    setCityInput(cityName);
+  }, [cityName]);
+  useEffect(() => {
+    setPostalInput(postalCode);
+  }, [postalCode]);
 
   const resolveQuery = useResolveLocation(
     cityName || undefined,

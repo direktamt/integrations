@@ -81,6 +81,7 @@ export class GovDataFacade {
 
   /**
    * Direct online-application links for a territory, optionally per service.
+   * All upstream pages are collected; the result is the complete set.
    */
   listOnlineServices(
     regionalKey: string,
@@ -111,7 +112,8 @@ export class GovDataFacade {
   }
 
   /**
-   * Federal master text (parsed XZuFi); fallback when no local description exists.
+   * Parsed federal master text as published by the FIM Portal
+   * (unvalidated pass-through of a dynamic upstream shape).
    */
   getParsedMasterText(
     editorialOfficeId: string,
