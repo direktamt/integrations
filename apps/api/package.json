@@ -11,14 +11,15 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/Main",
-    "lint": "eslint \"{src,test}/**/*.ts\"",
-    "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",
+    "lint": "eslint \"{src,test,scripts}/**/*.ts\"",
+    "lint:fix": "eslint \"{src,test,scripts}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:pvog-service-search-compat": "ts-node -r tsconfig-paths/register scripts/VerifyPvogServiceSearchCompatibility.ts"
   },
   "dependencies": {
     "@direktamt/integrations-contracts": "0.1.0",

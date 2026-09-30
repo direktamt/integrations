@@ -279,64 +279,6 @@ describe('PvogSearchClient', () => {
       expect(service.targetAudiences).toEqual(['Bürger', 'Unternehmen']);
       expect(service.availableLanguages).toEqual(['de', 'en', 'fr']);
     });
-
-    it('carries the metadata into search results', async () => {
-      fetchStub.respondWithJson({
-        serviceDescriptions: {
-          content: [SERVICE_DESCRIPTION],
-          totalElements: 1,
-          totalPages: 1,
-        },
-      });
-
-      const result = await client.searchServices('053150000000', 'Wohnsitz', {
-        size: 10,
-        page: 0,
-        fuzzySearch: true,
-        useRegionalHierarchy: true,
-      });
-
-      expect(result.services[0]).toMatchObject({
-        federalStateKeys: ['05'],
-        targetAudiences: ['Bürger'],
-        availableLanguages: ['de', 'en'],
-      });
-    });
-  });
-
-  it('searches services and unwraps the paginated envelope', async () => {
-    fetchStub.respondWithJson({
-      facades: {},
-      serviceDescriptions: {
-        content: [SERVICE_DESCRIPTION],
-        totalElements: 1,
-        totalPages: 1,
-      },
-    });
-
-    const result = await client.searchServices(
-      '053150000000',
-      'Wohnsitz anmelden',
-      {
-        size: 10,
-        page: 0,
-        fuzzySearch: true,
-        useRegionalHierarchy: true,
-      },
-    );
-
-    const params = fetchStub.lastUrl().searchParams;
-    expect(fetchStub.lastUrl().pathname).toBe(
-      '/suchdienst/api/v7/servicedescriptions/053150000000',
-    );
-    expect(params.getAll('q')).toEqual(['Wohnsitz anmelden']);
-    expect(params.get('size')).toBe('10');
-    expect(params.get('fuzzysearch')).toBe('true');
-    expect(params.get('useArsHierarchy')).toBe('true');
-    expect(params.has('personalMatters')).toBe(false);
-    expect(result.totalElements).toBe(1);
-    expect(result.totalPages).toBe(1);
-    expect(result.services.map((s) => s.id)).toEqual(['L100002.LB.1']);
   });
 
   it('lists online services with de-duplicated service catalog keys', async () => {

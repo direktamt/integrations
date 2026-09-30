@@ -161,6 +161,11 @@ GET /v7/servicedescriptions/{ars}?q={query}
 A `size` below 5 is rejected with 400. The integrations API validates `size`
 (5–9999) and `page` (0–100) locally and answers 400 before calling upstream.
 
+**v7 is the production default** of `GET /services`
+(`PVOG_SERVICE_SEARCH_VERSION=v7`, adapter `PvogV7ServiceSearchProvider`).
+The beta successor `/v8beta1/servicedescriptions` is a supported
+experimental adapter, see 1.3.1.
+
 Request:
 
 ```
@@ -227,9 +232,106 @@ observed in live data: `Kurzinfo`, `Leistungsbezeichnung`, `Beschreibung`,
 > ⚠️ Section `text` values are **HTML free text** as published by the
 > authority. Treat them as untrusted content and sanitize before rendering.
 
-Wire models: `WireServiceSearchResponse`, `WireServiceDescriptionPage`,
+Wire models: `WireV7ServiceSearchResponse`, `WireV7ServiceDescriptionPage`,
 `WireServiceDescription`, `WireServiceSection`, `WireLink`.
-Used by `GET /services`.
+Used by `GET /services` (default adapter).
+
+#### 1.3.1 Service search v8beta1 ✅ (supported experimental adapter, not default)
+
+```
+GET /v8beta1/servicedescriptions?ars={ars}&q={query}
+```
+
+Announced with release 9.21 (August 2026) as the eventual replacement of
+`/v7/servicedescriptions/{ars}`; the operator states that data model and
+behaviour may still change. Implemented as `PvogV8BetaServiceSearchProvider`,
+selected only by `PVOG_SERVICE_SEARCH_VERSION=v8beta1`; no promise of
+stable compatibility. Verified live on 2026-09-30 (200, no deprecation
+header).
+
+| Param             | Meaning                                                        |
+| ----------------- | -------------------------------------------------------------- |
+| `ars`             | territory key, now a query parameter instead of a path segment |
+| `q`               | search term(s), repeatable                                     |
+| `size` / `page`   | pagination, same limits as v7 (size 5–9999, page 0–100)        |
+| `useArsHierarchy` | default true, same semantics as v7                             |
+| `personalMatters` | life-situation filter, same as v7                              |
+| `facades`         | life-situation aggregation, same as v7                         |
+
+Not available: `fuzzysearch` (the search is always fuzzy — a misspelled
+query that yields nothing on v7 without `fuzzysearch=true` yields hits
+here), `validDate` (validity is always evaluated at request time),
+`ignoreLeikaTypes`, `applyDynamicParams`. Unknown parameters are ignored
+silently.
+
+Request:
+
+```
+GET https://pvog.fitko.net/suchdienst/api/v8beta1/servicedescriptions?ars=053150000000&q=Wohnsitz anmelden&size=5
+```
+
+Response (about 2.5 KB on 2026-09-30 versus about 70 KB for the same v7
+query; trimmed):
+
+```json
+{
+  "serviceDescriptions": {
+    "content": [
+      {
+        "id": "L100002.LB.121407320",
+        "name": "Wohnsitz anmelden",
+        "teaser": "Beziehen Sie eine neue Wohnung? ...",
+        "arsFederalstate": ["05"],
+        "languageComplete": { "en": false },
+        "onlineServiceLinks": [
+          {
+            "id": "L100002.OD.121797650",
+            "title": "Wohnsitz anmelden",
+            "uri": "https://..."
+          }
+        ],
+        "availableLanguages": ["de", "en"]
+      }
+    ],
+    "page": { "size": 5, "number": 0, "totalElements": 10, "totalPages": 2 }
+  },
+  "facades": { "personalMatters": [] }
+}
+```
+
+Differences to v7 and how the adapter absorbs them:
+
+- A hit is a reduced view: no `leikakeys`, `ars`, `description`,
+  `addressees` or `details`. The adapter loads every hit from
+  `/v6/servicedescriptions/{id}/detail` (1.4) with the same `ars` and
+  `useArsHierarchy` — one search call plus one detail call per hit, at most
+  8 in flight — and keeps `arsFederalstate` from the hit because the detail
+  does not deliver it. A hit whose detail answers 404 is a contract
+  violation.
+- Page totals live in `serviceDescriptions.page` instead of next to the
+  content. Totals may differ from v7 for the same query (10 versus 8 for the
+  reference query on 2026-09-30); ranking may differ as well.
+- `summary` and `targetAudiences` of the public contract come from the v7
+  search item only; on v8beta1 they are empty.
+- The detail view publishes a different section set than the v7 search
+  item: the v7 item renders the responsibilities as `Zuständige Stelle` and
+  `Ansprechpunkt` sections and adds `Urheber`, sometimes `Fristen`, while
+  the detail moves responsibilities into `organisations` and adds
+  `Fachliche Freigabe` and `Ursprungsportal`; for federal descriptions
+  resolved through a municipal ARS the detail delivered fewer content
+  sections than the v7 item. Sections present in both were identical in
+  text and links. `sections` of a v8beta1 search result therefore equal
+  those of `GET /services/{id}`, not those of a v7 search hit.
+
+Live comparison on 2026-09-30 (`npm run verify:pvog-service-search-compat`,
+three reference queries, 30 common services): ids, titles, LeiKa keys,
+regional keys, federal states and languages identical; common sections
+identical; ranking identical for two of three queries; semantic
+compatibility PASS with the differences above.
+
+Wire models: `WireV8ServiceSearchResponse`, `WireV8ServiceSearchPage`,
+`WireV8PageMetadata`, `WireV8ServiceSearchHit` (plus the 1.4 models for the
+detail). Used by `GET /services` when `PVOG_SERVICE_SEARCH_VERSION=v8beta1`.
 
 ### 1.4 Service detail by id ✅ (implemented)
 
@@ -589,12 +691,10 @@ None of them is used by this project.
 
 ### 1.10 Watch items
 
-- `GET /v8beta1/servicedescriptions?ars={ars}&q={query}` ✅ is a new beta
-  search endpoint (release 9.21, August 2026) with a reduced request and
-  response model and reworked pagination. The operator states that it will
-  eventually replace `/v7/servicedescriptions/{ars}` but is not yet
-  productive. `/v7` remains supported and is what this project uses; no
-  migration until `/v8` leaves beta.
+- `GET /v8beta1/servicedescriptions` is the announced successor of
+  `/v7/servicedescriptions/{ars}`; implemented as an opt-in experimental
+  adapter (1.3.1). `/v7` remains the default; no switch until `/v8` leaves
+  beta and a separate decision changes the default.
 - `GET /v1beta2/onlineservices` is beta, see 1.6.
 - `GET /v1beta2/onlineservices/{odId}/organisations` is beta, see 1.7.
 
@@ -810,6 +910,10 @@ checklist for coding agents.
 
 ## Changelog
 
+- **2026-09-30** (service-search versions): `/v8beta1/servicedescriptions`
+  verified live and implemented as the opt-in adapter
+  `PvogV8BetaServiceSearchProvider` (1.3.1); v7 stays the default. Parameter
+  and response differences recorded; live semantic comparison PASS.
 - **2026-09-30** (raw JZuFi): `/v1/servicedescriptions/{id}/jzufi-2-3` and
   `/v1/onlineservices/{id}/jzufi-2-3` verified live (200 JSON, 401 for an
   XML `Accept`, 404 for an unknown id) and implemented as raw pass-through

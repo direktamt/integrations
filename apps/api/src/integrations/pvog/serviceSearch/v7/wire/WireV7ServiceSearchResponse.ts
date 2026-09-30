@@ -1,11 +1,12 @@
 import { Expose, Type } from 'class-transformer';
 import { IsOptional, ValidateNested } from 'class-validator';
-import { WireServiceDescriptionPage } from './WireServiceDescriptionPage';
+import { WireV7ServiceDescriptionPage } from './WireV7ServiceDescriptionPage';
 
 /**
- * PVOG wire model: top-level envelope of the service search endpoint.
+ * PVOG wire model (v7 service search): top-level envelope of
+ * `GET /v7/servicedescriptions/{ars}`.
  */
-export class WireServiceSearchResponse {
+export class WireV7ServiceSearchResponse {
   /**
    * Facet metadata; not consumed yet, intentionally not validated.
    */
@@ -24,6 +25,6 @@ export class WireServiceSearchResponse {
   @Expose()
   @IsOptional()
   @ValidateNested()
-  @Type(() => WireServiceDescriptionPage)
-  serviceDescriptions?: WireServiceDescriptionPage;
+  @Type(() => WireV7ServiceDescriptionPage)
+  serviceDescriptions?: WireV7ServiceDescriptionPage;
 }

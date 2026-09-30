@@ -57,6 +57,12 @@ npm run lint --workspace @direktamt/integrations-api
      into controllers/use cases. Compositions across upstream resources live
      in the facade or in a dedicated assembler next to it
      (`ServiceContextAssembler`), never inside an adapter.
+   - Upstream API versions of one capability are separate adapters behind one
+     interface (`serviceSearch/ServiceSearchProvider`), each with its own wire
+     models, selected once at startup from configuration
+     (`PVOG_SERVICE_SEARCH_VERSION`, v7 default). Never merge versions into
+     one wire model, never select per request, never expose the version in
+     a domain payload, and never make a beta the default without a decision.
    - Raw provider representations live under `/raw/{provider}` only
      (`RawPvogController`, `PvogRawClient`): a static whitelist of upstream
      resources, the caller supplies an object id and nothing else, the body

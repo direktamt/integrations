@@ -7,6 +7,7 @@ import { GovDataFacade } from './GovDataFacade';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
 import { PvogRawClient } from './pvog/PvogRawClient';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
+import { ServiceSearchProvider } from './pvog/serviceSearch/ServiceSearchProvider';
 import { ServiceContextAssembler } from './ServiceContextAssembler';
 
 /**
@@ -60,8 +61,14 @@ describe('GovDataFacade', () => {
   const pvogSearchClient = new PvogSearchClient();
   const pvogAuthorityClient = new PvogAuthorityClient();
   const fimPortalClient = new FimPortalClient();
+  const searchServices = jest.fn<
+    ReturnType<ServiceSearchProvider['searchServices']>,
+    Parameters<ServiceSearchProvider['searchServices']>
+  >();
+  const serviceSearchProvider: ServiceSearchProvider = { searchServices };
   const facade = new GovDataFacade(
     pvogSearchClient,
+    serviceSearchProvider,
     pvogAuthorityClient,
     new PvogRawClient(),
     fimPortalClient,
@@ -101,6 +108,28 @@ describe('GovDataFacade', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  it('serves the search through the configured adapter only', async () => {
+    const result = { services: [], totalElements: 0, totalPages: 0 };
+    searchServices.mockResolvedValue(result);
+    const options = {
+      size: 10,
+      page: 0,
+      fuzzySearch: true,
+      useRegionalHierarchy: true,
+    };
+
+    await expect(
+      facade.searchServices('053150000000', 'Wohnsitz', options),
+    ).resolves.toBe(result);
+
+    expect(searchServices).toHaveBeenCalledWith(
+      '053150000000',
+      'Wohnsitz',
+      options,
+    );
+    expect(fetchStub.calls).toHaveLength(0);
   });
 
   it('returns the public service description without the references', async () => {

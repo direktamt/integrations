@@ -1,11 +1,12 @@
 import { Expose, Type } from 'class-transformer';
 import { IsArray, IsNumber, IsOptional, ValidateNested } from 'class-validator';
-import { WireServiceDescription } from './WireServiceDescription';
+import { WireServiceDescription } from '../../../wire/WireServiceDescription';
 
 /**
- * PVOG wire model: one page of service-description search results.
+ * PVOG wire model (v7 service search): one page of full service
+ * descriptions with the page totals inlined next to the content.
  */
-export class WireServiceDescriptionPage {
+export class WireV7ServiceDescriptionPage {
   /**
    * Service descriptions on this page.
    */

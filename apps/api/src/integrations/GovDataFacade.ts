@@ -12,12 +12,16 @@ import type {
   ServiceContext,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { FimPortalClient } from './fim/FimPortalClient';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
 import { PvogRawClient } from './pvog/PvogRawClient';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
 import { ServiceSearchOptions } from './pvog/model/ServiceSearchOptions';
+import {
+  SERVICE_SEARCH_PROVIDER,
+  type ServiceSearchProvider,
+} from './pvog/serviceSearch/ServiceSearchProvider';
 import { ServiceContextAssembler } from './ServiceContextAssembler';
 
 /**
@@ -32,6 +36,8 @@ import { ServiceContextAssembler } from './ServiceContextAssembler';
 export class GovDataFacade {
   constructor(
     private readonly pvogSearchClient: PvogSearchClient,
+    @Inject(SERVICE_SEARCH_PROVIDER)
+    private readonly serviceSearchProvider: ServiceSearchProvider,
     private readonly pvogAuthorityClient: PvogAuthorityClient,
     private readonly pvogRawClient: PvogRawClient,
     private readonly fimPortalClient: FimPortalClient,
@@ -147,14 +153,19 @@ export class GovDataFacade {
   /**
    * Plain-language search for public services within a territory: accepts a
    * query plus a resolved regional key and returns matching services with all
-   * description sections.
+   * description sections. Served by the service-search adapter configured
+   * at startup; the result contract is the same for every upstream version.
    */
   searchServices(
     regionalKey: string,
     query: string,
     options: ServiceSearchOptions,
   ): Promise<ServiceSearchResult> {
-    return this.pvogSearchClient.searchServices(regionalKey, query, options);
+    return this.serviceSearchProvider.searchServices(
+      regionalKey,
+      query,
+      options,
+    );
   }
 
   /**

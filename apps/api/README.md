@@ -33,13 +33,14 @@ object) from the environment; in development, variables come from
 `apps/api/.env` (gitignored, template in `.env.example`). Application code
 never touches `process.env` directly; always go through `CONFIG`.
 
-| Env var                        | Default                                 | Purpose                                                 |
-| ------------------------------ | --------------------------------------- | ------------------------------------------------------- |
-| `PORT`                         | `3000`                                  | HTTP port                                               |
-| `CORS_ORIGINS`                 | `http://localhost:5173`                 | Comma-separated browser origins allowed to call the API |
-| `PVOG_SEARCH_BASE_URL`         | `https://pvog.fitko.net/suchdienst/api` | PVOG Suchdienst base URL                                |
-| `FIM_PORTAL_BASE_URL`          | `https://fimportal.de/api`              | FIM Portal base URL                                     |
-| `INTEGRATIONS_HTTP_TIMEOUT_MS` | `15000`                                 | Timeout for outbound requests to the upstream APIs      |
+| Env var                        | Default                                 | Purpose                                                                                                                                                          |
+| ------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                         | `3000`                                  | HTTP port                                                                                                                                                        |
+| `CORS_ORIGINS`                 | `http://localhost:5173`                 | Comma-separated browser origins allowed to call the API                                                                                                          |
+| `PVOG_SEARCH_BASE_URL`         | `https://pvog.fitko.net/suchdienst/api` | PVOG Suchdienst base URL                                                                                                                                         |
+| `FIM_PORTAL_BASE_URL`          | `https://fimportal.de/api`              | FIM Portal base URL                                                                                                                                              |
+| `PVOG_SERVICE_SEARCH_VERSION`  | `v7`                                    | Upstream version of the PVOG service search behind `GET /services`: `v7` (production default) or `v8beta1` (experimental adapter); any other value stops startup |
+| `INTEGRATIONS_HTTP_TIMEOUT_MS` | `15000`                                 | Timeout for outbound requests to the upstream APIs                                                                                                               |
 
 ## Source layout
 
@@ -63,7 +64,13 @@ src/
     common/UrlSanitizer.ts           # strips query values from URLs before they reach logs
     common/exceptions/               # IntegrationException hierarchy
     pvog/                            # PVOG Suchdienst adapter
-      PvogSearchClient.ts            # locations, services, online services
+      PvogSearchClient.ts            # locations, service detail, online services
+      ServiceDescriptionMapper.ts    # shared wire → PublicServiceDescription mapping
+      serviceSearch/                 # versioned service-search adapters behind one interface
+        ServiceSearchProvider.ts     #   interface + injection token
+        PvogServiceSearchVersion.ts  #   PVOG_SERVICE_SEARCH_VERSION parsing (v7 default)
+        v7/                          #   production adapter and its wire models
+        v8beta1/                     #   experimental adapter and its wire models
       PvogAuthorityClient.ts         # responsible organisation units (authorities)
       PvogRawClient.ts               # JZuFi 2.3 pass-through of a service description or online service
       model/ServiceSearchOptions.ts  # integration-only input options
@@ -128,6 +135,34 @@ catalog entry without a master text (404) — is a complete result. Errors
 that are not upstream failures propagate as 500. Adapters never orchestrate
 across resources.
 
+## Versioned service-search adapters
+
+`GET /services` is served by a `ServiceSearchProvider`; the implementation
+is selected once at startup from `PVOG_SERVICE_SEARCH_VERSION` and injected
+into `GovDataFacade` through the `SERVICE_SEARCH_PROVIDER` token. Nothing
+selects an adapter per request, and the response never says which version
+answered.
+
+| Adapter                           | Upstream                            | Status                              |
+| --------------------------------- | ----------------------------------- | ----------------------------------- |
+| `PvogV7ServiceSearchProvider`     | `GET /v7/servicedescriptions/{ars}` | production, default                 |
+| `PvogV8BetaServiceSearchProvider` | `GET /v8beta1/servicedescriptions`  | supported experimental, opt-in only |
+
+Each adapter has its own wire models under `serviceSearch/{version}/wire`.
+The v8beta1 hits are a reduced view without LeiKa keys, regional keys or
+sections, so that adapter loads every hit's full description from the detail
+endpoint (one search call plus one detail call per hit, at most 8 in flight)
+and maps it with the same `ServiceDescriptionMapper` the detail endpoint
+uses. Absorbed differences: the page totals sit in a separate `page`
+object; the search is always fuzzy and always evaluated at request time, so
+`fuzzySearch` and `validDate` have no effect; `summary` and
+`targetAudiences` are not published by v8beta1 or the detail endpoint and
+stay empty; the detail endpoint publishes a different section set than the
+v7 search hit (see the handbook). `ServiceSearchCompatibility.spec.ts`
+maps equivalent v7 and v8beta1 fixtures and asserts the same normalized
+result; `npm run verify:pvog-service-search-compat` does the same against
+the live APIs (see the handbook for the last run).
+
 ## Raw provider representations
 
 `/raw/pvog/services/{id}/jzufi-2-3` and
@@ -174,7 +209,7 @@ values such as search terms, postal codes or regional keys are never logged.
 against a stubbed `fetch` (`test/FetchStub.ts`); they never reach the
 network. The tests cover `BaseHttpClient` (query building, parsing,
 validation, error mapping, timeout), the PVOG and FIM mapping code including
-online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the online-service → authorities composition (de-duplication, concurrency cap), the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the concurrency helper, the raw JZuFi pass-through (envelope, unchanged body, path encoding, error mapping, log hygiene), the request DTO limits, and the status mapping of
+online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the online-service → authorities composition (de-duplication, concurrency cap), the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the concurrency helper, the raw JZuFi pass-through (envelope, unchanged body, path encoding, error mapping, log hygiene), both service-search adapters and their semantic compatibility on equivalent fixtures, the version parsing and adapter selection, the request DTO limits, and the status mapping of
 `UpstreamExceptionFilter`.
 
 Live verification of the upstream contracts is a manual procedure, see

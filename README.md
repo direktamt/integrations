@@ -96,6 +96,21 @@ published" from "not available right now". Relations are never inferred: a
 service without LeiKa keys has no online services, catalog entries or master
 texts in its context.
 
+## Upstream isolation in practice
+
+PVOG has announced `/v8beta1/servicedescriptions` as the successor of the
+`/v7` service search. Both versions are implemented behind one
+`ServiceSearchProvider` interface, each with its own wire models, and both
+return the same `ServiceSearchResult` — `GET /services` does not change
+when the upstream version does. The adapter is chosen once at startup with
+`PVOG_SERVICE_SEARCH_VERSION` (`v7` unless configured otherwise; an unknown
+value stops the API), never per request. The v8beta1 hits are a reduced
+view, so that adapter completes every hit from the detail endpoint to keep
+the contract; `npm run verify:pvog-service-search-compat` runs both
+adapters against the live APIs and reports the semantic differences. v7
+remains the production default until a separate decision changes it; the
+beta adapter comes with no stability promise.
+
 ## Supported data sources
 
 | Source                 | Operator | Status                      | Used for                                                                                                                                |
@@ -187,14 +202,15 @@ cp apps/api/.env.example apps/api/.env
 cp apps/ui/.env.example apps/ui/.env
 ```
 
-| Variable                       | Default                                 | Purpose                                                 |
-| ------------------------------ | --------------------------------------- | ------------------------------------------------------- |
-| `PORT`                         | `3000`                                  | HTTP port of the API                                    |
-| `CORS_ORIGINS`                 | `http://localhost:5173`                 | Comma-separated browser origins allowed to call the API |
-| `PVOG_SEARCH_BASE_URL`         | `https://pvog.fitko.net/suchdienst/api` | PVOG Suchdienst base URL                                |
-| `FIM_PORTAL_BASE_URL`          | `https://fimportal.de/api`              | FIM Portal base URL                                     |
-| `INTEGRATIONS_HTTP_TIMEOUT_MS` | `15000`                                 | Timeout for outbound upstream requests                  |
-| `VITE_API_BASE_URL`            | `http://localhost:3000`                 | API base URL used by the console (read at build time)   |
+| Variable                       | Default                                 | Purpose                                                                                                                   |
+| ------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                         | `3000`                                  | HTTP port of the API                                                                                                      |
+| `CORS_ORIGINS`                 | `http://localhost:5173`                 | Comma-separated browser origins allowed to call the API                                                                   |
+| `PVOG_SEARCH_BASE_URL`         | `https://pvog.fitko.net/suchdienst/api` | PVOG Suchdienst base URL                                                                                                  |
+| `FIM_PORTAL_BASE_URL`          | `https://fimportal.de/api`              | FIM Portal base URL                                                                                                       |
+| `PVOG_SERVICE_SEARCH_VERSION`  | `v7`                                    | Upstream version of the PVOG service search behind `GET /services`: `v7` (production default) or `v8beta1` (experimental) |
+| `INTEGRATIONS_HTTP_TIMEOUT_MS` | `15000`                                 | Timeout for outbound upstream requests                                                                                    |
+| `VITE_API_BASE_URL`            | `http://localhost:3000`                 | API base URL used by the console (read at build time)                                                                     |
 
 No secrets are required: both upstream APIs are public and unauthenticated.
 
