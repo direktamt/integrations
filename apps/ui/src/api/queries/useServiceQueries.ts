@@ -1,6 +1,7 @@
 import type {
   PublicAuthority,
   PublicServiceDescription,
+  ServiceContext,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
 import { useQuery } from '@tanstack/react-query';
@@ -78,6 +79,27 @@ export function useServiceAuthorities(
     queryFn: () =>
       apiClient.get<PublicAuthority[]>(
         `/services/${encodeURIComponent(id)}/authorities`,
+        { regionalKey, useRegionalHierarchy },
+      ),
+    enabled: id.length > 0 && regionalKey.length > 0,
+  });
+}
+
+/**
+ * GET /services/{id}/context — the composed context of a service within a
+ * territory (service, authorities, online services, catalog entries,
+ * master texts) with its partial-failure status.
+ */
+export function useServiceContext(
+  id: string,
+  regionalKey: string,
+  useRegionalHierarchy: boolean,
+) {
+  return useQuery({
+    queryKey: ['services', id, 'context', regionalKey, useRegionalHierarchy],
+    queryFn: () =>
+      apiClient.get<ServiceContext>(
+        `/services/${encodeURIComponent(id)}/context`,
         { regionalKey, useRegionalHierarchy },
       ),
     enabled: id.length > 0 && regionalKey.length > 0,

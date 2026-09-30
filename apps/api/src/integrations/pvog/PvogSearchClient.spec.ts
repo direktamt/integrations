@@ -1,4 +1,7 @@
-import { ServiceSectionType } from '@direktamt/integrations-contracts';
+import {
+  AuthorityRole,
+  ServiceSectionType,
+} from '@direktamt/integrations-contracts';
 import { FetchStub } from '../../../test/FetchStub';
 import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
 import { PvogSearchClient } from './PvogSearchClient';
@@ -102,7 +105,7 @@ describe('PvogSearchClient', () => {
   it('maps a service description with typed sections and links', async () => {
     fetchStub.respondWithJson(SERVICE_DESCRIPTION);
 
-    const service = await client.getServiceDescription(
+    const { service, authorityReferences } = await client.getServiceDescription(
       'L100002.LB.1',
       '053150000000',
       true,
@@ -112,6 +115,7 @@ describe('PvogSearchClient', () => {
       '/suchdienst/api/v6/servicedescriptions/L100002.LB.1/detail',
     );
     expect(fetchStub.lastUrl().searchParams.get('ars')).toBe('053150000000');
+    expect(authorityReferences).toEqual([]);
     expect(service).toEqual({
       id: 'L100002.LB.1',
       serviceCatalogKeys: ['99115005104000'],
@@ -144,6 +148,94 @@ describe('PvogSearchClient', () => {
     });
   });
 
+  describe('authority references', () => {
+    it('maps the responsible organisation units with their roles', async () => {
+      fetchStub.respondWithJson({
+        ...SERVICE_DESCRIPTION,
+        organisations: [
+          {
+            id: 'L100002.OE.1',
+            title: 'Kundenzentrum',
+            role: { code: '02', name: 'Zuständige Stelle' },
+          },
+          {
+            id: 'L100002.OE.2',
+            title: 'Bürgertelefon',
+            role: { code: '03', name: 'Ansprechpunkt' },
+          },
+          {
+            id: 'L100002.OE.3',
+            title: 'Beides',
+            role: { code: '01', name: 'Zuständige Stelle und Ansprechpunkt' },
+          },
+          {
+            id: 'L100002.OE.4',
+            title: 'EA',
+            role: { code: '11', name: 'Einheitlicher Ansprechpartner' },
+          },
+          {
+            id: 'L100002.OE.5',
+            title: 'Andere',
+            role: { code: '19', name: 'Andere Einheitliche Stelle' },
+          },
+          {
+            id: 'L100002.OE.6',
+            title: '',
+            role: { code: '99', name: 'Unbekannt' },
+          },
+          { id: 'L100002.OE.7' },
+        ],
+      });
+
+      const { authorityReferences } = await client.getServiceDescription(
+        'L100002.LB.1',
+        '053150000000',
+        true,
+      );
+
+      expect(authorityReferences).toEqual([
+        {
+          id: 'L100002.OE.1',
+          name: 'Kundenzentrum',
+          role: AuthorityRole.ResponsibleAuthority,
+        },
+        {
+          id: 'L100002.OE.2',
+          name: 'Bürgertelefon',
+          role: AuthorityRole.ContactPoint,
+        },
+        {
+          id: 'L100002.OE.3',
+          name: 'Beides',
+          role: AuthorityRole.ResponsibleAuthorityAndContactPoint,
+        },
+        {
+          id: 'L100002.OE.4',
+          name: 'EA',
+          role: AuthorityRole.SinglePointOfContact,
+        },
+        {
+          id: 'L100002.OE.5',
+          name: 'Andere',
+          role: AuthorityRole.OtherSinglePointOfContact,
+        },
+        { id: 'L100002.OE.6', name: undefined, role: AuthorityRole.Other },
+        { id: 'L100002.OE.7', name: undefined, role: AuthorityRole.Other },
+      ]);
+    });
+
+    it('rejects a reference without an id as a contract violation', async () => {
+      fetchStub.respondWithJson({
+        ...SERVICE_DESCRIPTION,
+        organisations: [{ title: 'Ohne Id' }],
+      });
+
+      await expect(
+        client.getServiceDescription('L100002.LB.1', '053150000000', true),
+      ).rejects.toBeInstanceOf(UpstreamContractViolationException);
+    });
+  });
+
   describe('service metadata', () => {
     it('normalizes missing metadata arrays to empty lists', async () => {
       fetchStub.respondWithJson({
@@ -152,7 +244,7 @@ describe('PvogSearchClient', () => {
         details: [],
       });
 
-      const service = await client.getServiceDescription(
+      const { service } = await client.getServiceDescription(
         'L100002.LB.2',
         '053150000000',
         true,
@@ -177,7 +269,7 @@ describe('PvogSearchClient', () => {
         availableLanguages: ['de', 'en', 'fr'],
       });
 
-      const service = await client.getServiceDescription(
+      const { service } = await client.getServiceDescription(
         'L100002.LB.1',
         '053150000000',
         true,

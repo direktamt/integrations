@@ -1,11 +1,9 @@
-import type { OnlineService } from '@direktamt/integrations-contracts';
-import { Button, Link, Stack, TextField } from '@mui/material';
+import { Button, Stack, TextField } from '@mui/material';
 import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useOnlineServices } from '../../api/queries/useOnlineServiceQueries';
-import { DataTable } from '../../components/DataTable';
-import { KeyChip } from '../../components/KeyChip';
 import { KeyListField } from '../../components/KeyListField';
+import { OnlineServiceTable } from '../../components/OnlineServiceTable';
 import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
@@ -82,46 +80,7 @@ export function OnlineServicesPage() {
         idleMessage="Provide a regional key to load online services."
         isEmpty={(services) => services.length === 0}
       >
-        {(services) => (
-          <DataTable
-            columns={[
-              {
-                header: 'Name',
-                render: (service: OnlineService) => service.name ?? '(unnamed)',
-              },
-              {
-                header: 'Description',
-                render: (service: OnlineService) => service.description,
-              },
-              {
-                header: 'Service catalog keys',
-                render: (service: OnlineService) =>
-                  service.serviceCatalogKeys.map((key) => (
-                    <KeyChip key={key} value={key} />
-                  )),
-              },
-              {
-                header: 'Links',
-                render: (service: OnlineService) =>
-                  service.links.map((link, index) =>
-                    link.url ? (
-                      <div key={index}>
-                        <Link href={link.url} target="_blank" rel="noreferrer">
-                          {link.title || link.url}
-                        </Link>
-                      </div>
-                    ) : null,
-                  ),
-              },
-              {
-                header: 'Last updated',
-                render: (service: OnlineService) => service.lastUpdatedAt,
-              },
-            ]}
-            rows={services}
-            getRowKey={(service, index) => service.id ?? String(index)}
-          />
-        )}
+        {(services) => <OnlineServiceTable services={services} />}
       </QueryStateGate>
     </>
   );

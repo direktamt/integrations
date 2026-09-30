@@ -67,6 +67,35 @@ integrations API (NestJS)
 Runtime integration requests are deterministic and do not depend on LLM
 calls.
 
+## The composed service context
+
+The endpoint that shows why this layer exists is
+`GET /services/{id}/context?regionalKey=`. A consumer that wants to present
+one administrative service completely would otherwise have to call five
+upstream resources on two systems and connect them by their identifiers:
+
+```text
+PVOG  service detail ─── organisation units ──→ authorities
+        │
+        └── LeiKa keys ──→ online services (PVOG)
+                      └──→ catalog entries (FIM) ──→ master texts (FIM)
+
+PVOG ─────┐
+          ├─→ ServiceContext
+FIM ──────┘
+```
+
+The integration layer loads the service once, follows the published
+relations (organisation-unit ids, LeiKa keys, editorial office and service
+ids from the catalog), runs the independent lookups in parallel and returns
+one `ServiceContext`. The service itself is mandatory (404 when unknown);
+each auxiliary part is loaded independently and, when its upstream fails,
+comes back as an empty list together with a machine-readable
+`status.unavailableParts` entry, so a consumer can distinguish "nothing
+published" from "not available right now". Relations are never inferred: a
+service without LeiKa keys has no online services, catalog entries or master
+texts in its context.
+
 ## Supported data sources
 
 | Source                 | Operator | Status                      | Used for                                                                                                                                |
@@ -81,20 +110,21 @@ are documented in the handbook:
 
 ## Current capabilities
 
-The integrations API exposes ten read-only endpoints:
+The integrations API exposes eleven read-only endpoints:
 
-| Endpoint                                            | Upstream        | Purpose                                                                     |
-| --------------------------------------------------- | --------------- | --------------------------------------------------------------------------- |
-| `GET /locations/suggestions?query=`                 | PVOG Suchdienst | Autocomplete for city, district or postal code                              |
-| `GET /locations?cityName=&postalCode=`              | PVOG Suchdienst | Resolve a city name or postal code to territories                           |
-| `GET /locations/{regionalKey}`                      | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                                      |
-| `GET /services?regionalKey=&query=`                 | PVOG Suchdienst | Plain-language service search within a territory                            |
-| `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections and publication metadata  |
-| `GET /services/{id}/authorities?regionalKey=`       | PVOG Suchdienst | Authorities responsible for the service, with addresses and contacts        |
-| `GET /online-services?regionalKey=`                 | PVOG Suchdienst | Online-application links for a territory (all upstream pages are collected) |
-| `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog                             |
-| `GET /catalog/{serviceCatalogKey}`                  | FIM Portal      | One catalog entry                                                           |
-| `GET /master-texts/{editorialOfficeId}/{serviceId}` | FIM Portal      | Parsed federal master text (unvalidated pass-through)                       |
+| Endpoint                                            | Upstream        | Purpose                                                                                                           |
+| --------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `GET /locations/suggestions?query=`                 | PVOG Suchdienst | Autocomplete for city, district or postal code                                                                    |
+| `GET /locations?cityName=&postalCode=`              | PVOG Suchdienst | Resolve a city name or postal code to territories                                                                 |
+| `GET /locations/{regionalKey}`                      | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                                                                            |
+| `GET /services?regionalKey=&query=`                 | PVOG Suchdienst | Plain-language service search within a territory                                                                  |
+| `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections and publication metadata                                        |
+| `GET /services/{id}/authorities?regionalKey=`       | PVOG Suchdienst | Authorities responsible for the service, with addresses and contacts                                              |
+| `GET /services/{id}/context?regionalKey=`           | PVOG + FIM      | Composed context of one service: description, authorities, online services, catalog entries, master texts, status |
+| `GET /online-services?regionalKey=`                 | PVOG Suchdienst | Online-application links for a territory (all upstream pages are collected)                                       |
+| `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog                                                                   |
+| `GET /catalog/{serviceCatalogKey}`                  | FIM Portal      | One catalog entry                                                                                                 |
+| `GET /master-texts/{editorialOfficeId}/{serviceId}` | FIM Portal      | Parsed federal master text (unvalidated pass-through)                                                             |
 
 The API serves an OpenAPI document and Swagger UI at `/docs`.
 

@@ -54,7 +54,9 @@ npm run lint --workspace @direktamt/integrations-api
      resources; a public operation that composes several upstream calls
      stays inside one client.
    - App code depends only on `GovDataFacade`. Never inject clients directly
-     into controllers/use cases.
+     into controllers/use cases. Compositions across upstream resources live
+     in the facade or in a dedicated assembler next to it
+     (`ServiceContextAssembler`), never inside an adapter.
    - New external API → new subfolder with `{Name}Module`, `{Name}Client`,
      wire models in `wire/`, one class per file. API response models exposed to
      consumers go in `../../packages/contracts/`, one

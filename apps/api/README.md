@@ -57,6 +57,7 @@ src/
   integrations/                      # upstream adapters
     IntegrationsModule.ts
     GovDataFacade.ts                 # the ONLY integration entry point for app code
+    ServiceContextAssembler.ts       # composes GET /services/{id}/context from PVOG and FIM
     common/BaseHttpClient.ts         # fetch + timeout + wire validation + typed upstream exceptions
     common/UrlSanitizer.ts           # strips query values from URLs before they reach logs
     common/exceptions/               # IntegrationException hierarchy
@@ -100,6 +101,21 @@ and contact type derived from the XZuFi/XÖV code lists documented in the
 handbook). Consumers never see organisation-unit ids or code-list codes as
 part of the request; an unknown service or unit is answered with 404.
 
+`GET /services/{id}/context` is composed by `ServiceContextAssembler` behind
+the facade: the service detail is loaded once and is mandatory (404 when
+unknown); its organisation-unit references, LeiKa keys and the catalog's
+editorial-office/service ids drive the authorities, online services, catalog
+entries and master texts, which run in parallel where no data dependency
+exists (master texts follow the catalog entries). Partial-failure policy: an
+auxiliary part whose upstream raises an `IntegrationException` (no
+response, timeout, error status, contract violation) is returned as an empty
+list and listed in `status.unavailableParts` with `status.complete = false`;
+master texts are unavailable whenever the catalog entries are. A genuinely
+empty relation — no LeiKa key, a key the catalog does not know (404), a
+catalog entry without a master text (404) — is a complete result. Errors
+that are not upstream failures propagate as 500. Adapters never orchestrate
+across resources.
+
 ## Request validation
 
 Query DTOs in `api/request/` validate the documented upstream limits locally
@@ -132,8 +148,7 @@ values such as search terms, postal codes or regional keys are never logged.
 against a stubbed `fetch` (`test/FetchStub.ts`); they never reach the
 network. The tests cover `BaseHttpClient` (query building, parsing,
 validation, error mapping, timeout), the PVOG and FIM mapping code including
-online-service pagination and the service-to-authorities composition with
-small synthetic fixtures, the request DTO limits, and the status mapping of
+online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the request DTO limits, and the status mapping of
 `UpstreamExceptionFilter`.
 
 Live verification of the upstream contracts is a manual procedure, see

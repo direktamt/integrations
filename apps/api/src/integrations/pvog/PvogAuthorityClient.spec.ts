@@ -6,30 +6,19 @@ import {
 import { Logger } from '@nestjs/common';
 import { FetchStub } from '../../../test/FetchStub';
 import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
-import { UpstreamHttpException } from '../common/exceptions/UpstreamHttpException';
+import { AuthorityReference } from './model/AuthorityReference';
 import { PvogAuthorityClient } from './PvogAuthorityClient';
 
 /**
- * Minimal synthetic payloads shaped like the PVOG Suchdienst responses
- * documented in docs/INTEGRATIONS.md (sections 1.4 and 1.5). Values are
- * invented.
+ * Minimal synthetic payload shaped like the PVOG organisation-unit detail
+ * documented in docs/INTEGRATIONS.md, section 1.5. Values are invented.
  */
-const SERVICE_PATH =
-  '/suchdienst/api/v6/servicedescriptions/L100002.LB.1/detail';
 const AUTHORITY_PATH = '/suchdienst/api/v5/organisationunits/detail';
 
-const ROLE = {
-  name: 'Zuständige Stelle',
-  code: '02',
-  uri: 'urn:xoev-de:fim:codeliste:xzufi.zustaendigkeitsrolle',
-  version: '1',
-};
-
-const REFERENCE = {
+const REFERENCE: AuthorityReference = {
   id: 'L100002.OE.1',
-  title: 'Kundenzentrum Innenstadt',
-  role: ROLE,
-  criteria: [],
+  name: 'Kundenzentrum Innenstadt',
+  role: AuthorityRole.ResponsibleAuthority,
 };
 
 const AUTHORITY = {
@@ -37,7 +26,7 @@ const AUTHORITY = {
   title: 'Kundenzentrum Innenstadt',
   lastUpdate: '2026-01-01T00:00:00Z',
   languages: ['de'],
-  role: ROLE,
+  role: { name: 'Zuständige Stelle', code: '02' },
   location: {
     addresses: [
       {
@@ -65,17 +54,6 @@ const AUTHORITY = {
   extraneous: 'dropped',
 };
 
-function service(organisations?: unknown[]) {
-  return {
-    id: 'L100002.LB.1',
-    name: 'Wohnsitz anmelden',
-    leikakeys: ['99115005104000'],
-    ars: ['053150000000'],
-    details: [],
-    ...(organisations === undefined ? {} : { organisations }),
-  };
-}
-
 function json(body: unknown, status = 200): Promise<Response> {
   return Promise.resolve(
     new Response(JSON.stringify(body), {
@@ -88,26 +66,20 @@ function json(body: unknown, status = 200): Promise<Response> {
 describe('PvogAuthorityClient', () => {
   const fetchStub = new FetchStub();
   const client = new PvogAuthorityClient();
-  let errorSpy: jest.SpyInstance;
 
   /**
-   * Routes the service detail and the organisation-unit detail by path; a
-   * unit id without a configured payload answers 404 like the upstream.
+   * Answers the organisation-unit detail by id; an id without a configured
+   * payload answers 404 like the upstream.
    */
-  function serve(
-    serviceBody: unknown,
-    authoritiesById: Record<string, unknown>,
-  ) {
+  function serve(authoritiesById: Record<string, unknown>) {
     fetchStub.respondWith((url) => {
       const { pathname, searchParams } = new URL(url);
+      const authority =
+        pathname === AUTHORITY_PATH
+          ? authoritiesById[searchParams.get('q') ?? '']
+          : undefined;
 
-      if (pathname === SERVICE_PATH) return json(serviceBody);
-      if (pathname === AUTHORITY_PATH) {
-        const authority = authoritiesById[searchParams.get('q') ?? ''];
-
-        return authority ? json(authority) : json({ code: 'NOT_FOUND' }, 404);
-      }
-      return json({ code: 'NOT_FOUND' }, 404);
+      return authority ? json(authority) : json({ code: 'NOT_FOUND' }, 404);
     });
   }
 
@@ -121,9 +93,7 @@ describe('PvogAuthorityClient', () => {
 
   beforeEach(() => {
     fetchStub.calls.length = 0;
-    errorSpy = jest
-      .spyOn(Logger.prototype, 'error')
-      .mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
 
@@ -131,25 +101,17 @@ describe('PvogAuthorityClient', () => {
     jest.restoreAllMocks();
   });
 
-  it('lists one authority with addresses, contacts and websites', async () => {
-    serve(service([REFERENCE]), { 'L100002.OE.1': AUTHORITY });
+  it('maps one authority with addresses, contacts and websites', async () => {
+    serve({ 'L100002.OE.1': AUTHORITY });
 
-    const authorities = await client.listServiceAuthorities(
-      'L100002.LB.1',
-      '053150000000',
-      true,
-    );
+    const authorities = await client.listAuthorities([REFERENCE]);
 
-    expect(fetchStub.calls).toHaveLength(2);
-    const serviceUrl = new URL(fetchStub.calls[0].url);
-    expect(serviceUrl.pathname).toBe(SERVICE_PATH);
-    expect(serviceUrl.searchParams.get('ars')).toBe('053150000000');
-    expect(serviceUrl.searchParams.get('useArsHierarchy')).toBe('true');
-    const authorityUrl = new URL(fetchStub.calls[1].url);
-    expect(authorityUrl.pathname).toBe(AUTHORITY_PATH);
-    expect(authorityUrl.searchParams.get('q')).toBe('L100002.OE.1');
-    expect(authorityUrl.searchParams.has('ars')).toBe(false);
-    expect(authorityUrl.searchParams.has('lbId')).toBe(false);
+    expect(fetchStub.calls).toHaveLength(1);
+    const url = fetchStub.lastUrl();
+    expect(url.pathname).toBe(AUTHORITY_PATH);
+    expect(url.searchParams.get('q')).toBe('L100002.OE.1');
+    expect(url.searchParams.has('ars')).toBe(false);
+    expect(url.searchParams.has('lbId')).toBe(false);
 
     expect(authorities).toEqual([
       {
@@ -191,17 +153,13 @@ describe('PvogAuthorityClient', () => {
     ]);
   });
 
-  it('lists multiple authorities in upstream order with their roles', async () => {
-    const references = [
-      { ...REFERENCE, id: 'L100002.OE.1', role: { ...ROLE, code: '01' } },
-      { ...REFERENCE, id: 'L100002.OE.2', role: { ...ROLE, code: '03' } },
-      { ...REFERENCE, id: 'L100002.OE.3', role: { ...ROLE, code: '11' } },
-      { ...REFERENCE, id: 'L100002.OE.4', role: { ...ROLE, code: '19' } },
-      { ...REFERENCE, id: 'L100002.OE.5', role: { ...ROLE, code: '99' } },
-      { ...REFERENCE, id: 'L100002.OE.6', role: undefined },
+  it('loads multiple authorities in reference order and keeps their roles', async () => {
+    const references: AuthorityReference[] = [
+      { id: 'L100002.OE.1', role: AuthorityRole.ContactPoint },
+      { id: 'L100002.OE.2', role: AuthorityRole.SinglePointOfContact },
+      { id: 'L100002.OE.3', role: AuthorityRole.Other },
     ];
     serve(
-      service(references),
       Object.fromEntries(
         references.map((reference) => [
           reference.id,
@@ -210,49 +168,39 @@ describe('PvogAuthorityClient', () => {
       ),
     );
 
-    const authorities = await client.listServiceAuthorities(
-      'L100002.LB.1',
-      '053150000000',
-      false,
-    );
+    const authorities = await client.listAuthorities(references);
 
-    expect(fetchStub.calls).toHaveLength(7);
-    expect(
-      new URL(fetchStub.calls[0].url).searchParams.get('useArsHierarchy'),
-    ).toBe('false');
+    expect(fetchStub.calls).toHaveLength(3);
     expect(authorities.map((authority) => authority.id)).toEqual([
       'L100002.OE.1',
       'L100002.OE.2',
       'L100002.OE.3',
-      'L100002.OE.4',
-      'L100002.OE.5',
-      'L100002.OE.6',
     ]);
     expect(authorities.map((authority) => authority.role)).toEqual([
-      AuthorityRole.ResponsibleAuthorityAndContactPoint,
       AuthorityRole.ContactPoint,
       AuthorityRole.SinglePointOfContact,
-      AuthorityRole.OtherSinglePointOfContact,
-      AuthorityRole.Other,
       AuthorityRole.Other,
     ]);
   });
 
+  it('returns an empty list without a request when nothing is referenced', async () => {
+    serve({});
+
+    await expect(client.listAuthorities([])).resolves.toEqual([]);
+    expect(fetchStub.calls).toHaveLength(0);
+  });
+
   it('maps an authority without optional contact data', async () => {
-    serve(service([REFERENCE]), {
+    serve({
       'L100002.OE.1': {
         id: 'L100002.OE.1',
         lastUpdate: '2026-01-01T00:00:00Z',
-        role: ROLE,
+        role: { code: '02', name: 'Zuständige Stelle' },
         location: {},
       },
     });
 
-    const authorities = await client.listServiceAuthorities(
-      'L100002.LB.1',
-      '053150000000',
-      true,
-    );
+    const authorities = await client.listAuthorities([REFERENCE]);
 
     expect(authorities).toEqual([
       {
@@ -267,7 +215,7 @@ describe('PvogAuthorityClient', () => {
   });
 
   it('maps address types by code and drops empty address fields', async () => {
-    serve(service([REFERENCE]), {
+    serve({
       'L100002.OE.1': {
         ...AUTHORITY,
         location: {
@@ -300,11 +248,7 @@ describe('PvogAuthorityClient', () => {
       },
     });
 
-    const [authority] = await client.listServiceAuthorities(
-      'L100002.LB.1',
-      '053150000000',
-      true,
-    );
+    const [authority] = await client.listAuthorities([REFERENCE]);
 
     expect(authority.addresses).toEqual([
       {
@@ -343,7 +287,7 @@ describe('PvogAuthorityClient', () => {
   });
 
   it('maps contact channels by code and de-duplicates websites', async () => {
-    serve(service([REFERENCE]), {
+    serve({
       'L100002.OE.1': {
         ...AUTHORITY,
         location: {
@@ -378,11 +322,7 @@ describe('PvogAuthorityClient', () => {
       },
     });
 
-    const [authority] = await client.listServiceAuthorities(
-      'L100002.LB.1',
-      '053150000000',
-      true,
-    );
+    const [authority] = await client.listAuthorities([REFERENCE]);
 
     expect(authority.contacts).toEqual([
       {
@@ -417,31 +357,6 @@ describe('PvogAuthorityClient', () => {
   });
 
   it.each([
-    ['an empty relation', service([])],
-    ['no relation at all', service()],
-  ])(
-    'returns an empty list for %s without further calls',
-    async (_label, body) => {
-      serve(body, {});
-
-      await expect(
-        client.listServiceAuthorities('L100002.LB.1', '053150000000', true),
-      ).resolves.toEqual([]);
-      expect(fetchStub.calls).toHaveLength(1);
-    },
-  );
-
-  it('rejects an authority reference without an id before loading details', async () => {
-    serve(service([{ title: 'Kundenzentrum ohne Id', role: ROLE }]), {});
-
-    await expect(
-      client.listServiceAuthorities('L100002.LB.1', '053150000000', true),
-    ).rejects.toBeInstanceOf(UpstreamContractViolationException);
-    expect(fetchStub.calls).toHaveLength(1);
-    expect(errorSpy).toHaveBeenCalled();
-  });
-
-  it.each([
     ['a unit without an id', { ...AUTHORITY, id: undefined }],
     [
       'addresses that are not a list',
@@ -455,34 +370,21 @@ describe('PvogAuthorityClient', () => {
       },
     ],
   ])('rejects a malformed unit contract: %s', async (_label, unit) => {
-    serve(service([REFERENCE]), { 'L100002.OE.1': unit });
+    serve({ 'L100002.OE.1': unit });
 
-    await expect(
-      client.listServiceAuthorities('L100002.LB.1', '053150000000', true),
-    ).rejects.toBeInstanceOf(UpstreamContractViolationException);
-  });
-
-  it('passes an upstream 404 for an unknown service through', async () => {
-    fetchStub.respondWithJson({ code: 'NOT_FOUND' }, 404);
-
-    const failure = client.listServiceAuthorities(
-      'L100002.LB.1',
-      '053150000000',
-      true,
+    await expect(client.listAuthorities([REFERENCE])).rejects.toBeInstanceOf(
+      UpstreamContractViolationException,
     );
-
-    await expect(failure).rejects.toBeInstanceOf(UpstreamHttpException);
-    await expect(failure).rejects.toMatchObject({ status: 404 });
-    expect(fetchStub.calls).toHaveLength(1);
   });
 
-  it('passes an upstream 404 for a dangling authority reference through', async () => {
-    serve(service([REFERENCE, { ...REFERENCE, id: 'L100002.OE.gone' }]), {
-      'L100002.OE.1': AUTHORITY,
-    });
+  it('passes an upstream 404 for a dangling reference through', async () => {
+    serve({ 'L100002.OE.1': AUTHORITY });
 
     await expect(
-      client.listServiceAuthorities('L100002.LB.1', '053150000000', true),
+      client.listAuthorities([
+        REFERENCE,
+        { ...REFERENCE, id: 'L100002.OE.gone' },
+      ]),
     ).rejects.toMatchObject({ status: 404 });
   });
 });

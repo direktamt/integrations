@@ -1,10 +1,12 @@
 import type {
   PublicAuthority,
   PublicServiceDescription,
+  ServiceContext,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { GovDataFacade } from '../../integrations/GovDataFacade';
+import { GetServiceContextQuery } from '../request/GetServiceContextQuery';
 import { GetServiceQuery } from '../request/GetServiceQuery';
 import { ListServiceAuthoritiesQuery } from '../request/ListServiceAuthoritiesQuery';
 import { SearchServicesQuery } from '../request/SearchServicesQuery';
@@ -51,6 +53,21 @@ export class ServiceController {
     @Query() query: ListServiceAuthoritiesQuery,
   ): Promise<PublicAuthority[]> {
     return this.govDataFacade.listServiceAuthorities(
+      id,
+      query.regionalKey,
+      query.useRegionalHierarchy,
+    );
+  }
+
+  /**
+   * Composed context of the service: description, responsible authorities, online services, federal catalog entries and master texts from PVOG and FIM in one response; auxiliary parts degrade to empty lists with a status entry when their source fails.
+   */
+  @Get(':id/context')
+  getContext(
+    @Param('id') id: string,
+    @Query() query: GetServiceContextQuery,
+  ): Promise<ServiceContext> {
+    return this.govDataFacade.getServiceContext(
       id,
       query.regionalKey,
       query.useRegionalHierarchy,

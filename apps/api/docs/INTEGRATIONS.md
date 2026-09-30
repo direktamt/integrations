@@ -370,7 +370,7 @@ Notes:
 Wire models: `WireServiceDescription` → `WireAuthorityReference`,
 `WireAuthorityRole`; `WireAuthority` → `WireAuthorityLocation`,
 `WireAuthorityAddress`, `WireAuthorityContact`, `WireLink`.
-Used by `GET /services/{id}/authorities`.
+Used by `GET /services/{id}/authorities` and `GET /services/{id}/context`.
 
 ### 1.6 Online-application links (Onlinedienste) ✅ (implemented; beta upstream)
 
@@ -424,7 +424,7 @@ LeiKa key where possible.
 
 Wire models: `WireOnlineServicesResponse`, `WireOnlineService`,
 `WireOnlineServiceLink`, `WireOnlineServiceDescriptionRef`.
-Used by `GET /online-services`, which follows `nextPageToken` with the same
+Used by `GET /online-services` and `GET /services/{id}/context` (filtered by the service's LeiKa keys); the client follows `nextPageToken` with the same
 filters until the last page and returns the complete set (a repeated token or
 more than 100 pages is treated as a contract violation).
 
@@ -554,7 +554,7 @@ Use `leistungsschluessel` (LeiKa key) as the canonical service identifier
 across sources; PVOG exposes the same keys as `leikakeys`.
 
 Wire models: `WireCatalogSearchResponse`, `WireCatalogEntry`.
-Used by `GET /catalog` and `GET /catalog/{serviceCatalogKey}`.
+Used by `GET /catalog`, `GET /catalog/{serviceCatalogKey}` and, per LeiKa key of a service, `GET /services/{id}/context`.
 
 A `/v1/leistung-steckbriefe` endpoint with the same parameters exists ✅;
 `v0` is not marked deprecated. Watch item.
@@ -582,7 +582,9 @@ usually `primary`. Live example used for verification:
 The list endpoint reported 46k+ master texts on 2026-09-30.
 
 Wire model: none (raw JSON). Used by
-`GET /master-texts/{editorialOfficeId}/{serviceId}`.
+`GET /master-texts/{editorialOfficeId}/{serviceId}` and, with the
+`redaktion_id`/`leistung_id` of each catalog entry and the `primary` source,
+by `GET /services/{id}/context`.
 
 ### 2.3 Form data schemas (reference, not implemented)
 

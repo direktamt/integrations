@@ -1,6 +1,12 @@
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Box, Button, Stack, Typography } from '@mui/material';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import {
+  Link as RouterLink,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router';
 import {
   useService,
   useServiceAuthorities,
@@ -43,12 +49,21 @@ export function ServiceDetailPage() {
         title="Service detail"
         description={`GET /services/${id}`}
         actions={
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => void navigate(-1)}
-          >
-            Back
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              startIcon={<AccountTreeIcon />}
+              component={RouterLink}
+              to={`/services/${encodeURIComponent(id)}/context?${searchParams.toString()}`}
+            >
+              Inspect composed context
+            </Button>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => void navigate(-1)}
+            >
+              Back
+            </Button>
+          </Stack>
         }
       />
       <QueryStateGate

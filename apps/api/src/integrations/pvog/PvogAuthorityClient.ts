@@ -1,7 +1,6 @@
 import {
   AuthorityAddressType,
   AuthorityContactType,
-  AuthorityRole,
   type AuthorityAddress,
   type AuthorityContact,
   type PublicAuthority,
@@ -9,16 +8,15 @@ import {
 import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../config';
 import { BaseHttpClient } from '../common/BaseHttpClient';
+import { nonEmpty } from '../common/OptionalText';
+import { AuthorityReference } from './model/AuthorityReference';
 import { WireAuthority } from './wire/WireAuthority';
 import { WireAuthorityAddress } from './wire/WireAuthorityAddress';
 import { WireAuthorityContact } from './wire/WireAuthorityContact';
-import { WireAuthorityReference } from './wire/WireAuthorityReference';
-import { WireServiceDescription } from './wire/WireServiceDescription';
 
 /**
- * Adapter for the organisation-unit resources of the public PVOG Suchdienst
- * API: which authorities are responsible for a service in a territory and
- * how to reach them.
+ * Adapter for the organisation-unit resource of the public PVOG Suchdienst
+ * API: how the authorities responsible for a service can be reached.
  * Docs: GET {baseUrl}/v3/api-docs
  * Handbook: apps/api/docs/INTEGRATIONS.md, section 1.5.
  */
@@ -27,29 +25,15 @@ export class PvogAuthorityClient extends BaseHttpClient {
   protected readonly baseUrl = CONFIG.integrations.pvogSearchBaseUrl;
 
   /**
-   * Authorities responsible for one service within a territory, with their
-   * addresses, contact channels and websites. Two upstream calls are
-   * composed: the service detail lists the responsible organisation units
-   * with their roles (resolved along the territory hierarchy upstream), then
-   * every unit's detail supplies its contact data. Empty when the service
-   * names no authority.
+   * Contact data of the referenced organisation units, in the order of the
+   * references. Every unit is one upstream call, issued in parallel; the
+   * role comes from the reference because the service detail resolves it
+   * for the requested territory.
    */
-  async listServiceAuthorities(
-    serviceId: string,
-    regionalKey: string,
-    useRegionalHierarchy: boolean,
+  async listAuthorities(
+    references: AuthorityReference[],
   ): Promise<PublicAuthority[]> {
-    const service = await this.getModel(
-      WireServiceDescription,
-      `/v6/servicedescriptions/${encodeURIComponent(serviceId)}/detail`,
-      {
-        ars: regionalKey,
-        useArsHierarchy: useRegionalHierarchy,
-      },
-    );
-    const references = service.authorities ?? [];
-
-    const authorities = await Promise.all(
+    const units = await Promise.all(
       references.map((reference) =>
         this.getModel(WireAuthority, '/v5/organisationunits/detail', {
           q: reference.id,
@@ -58,22 +42,20 @@ export class PvogAuthorityClient extends BaseHttpClient {
     );
 
     return references.map((reference, index) =>
-      this.toAuthority(reference, authorities[index]),
+      this.toAuthority(reference, units[index]),
     );
   }
 
   private toAuthority(
-    reference: WireAuthorityReference,
+    reference: AuthorityReference,
     wire: WireAuthority,
   ): PublicAuthority {
     const links = [...(wire.location?.urls ?? []), ...(wire.websites ?? [])];
 
     return {
       id: wire.id,
-      name: nonEmpty(wire.title) ?? nonEmpty(reference.title),
-      role:
-        PvogAuthorityClient.ROLE_BY_CODE.get(reference.role?.code ?? '') ??
-        AuthorityRole.Other,
+      name: nonEmpty(wire.title) ?? reference.name,
+      role: reference.role,
       addresses: (wire.location?.addresses ?? []).map((address) =>
         this.toAddress(address),
       ),
@@ -122,19 +104,6 @@ export class PvogAuthorityClient extends BaseHttpClient {
   }
 
   /**
-   * XZuFi code list `xzufi.zustaendigkeitsrolle` → domain role. Code "01"
-   * is not part of the current code-list version but is still published by
-   * PVOG (observed live on 2026-09-30).
-   */
-  private static readonly ROLE_BY_CODE = new Map<string, AuthorityRole>([
-    ['01', AuthorityRole.ResponsibleAuthorityAndContactPoint],
-    ['02', AuthorityRole.ResponsibleAuthority],
-    ['03', AuthorityRole.ContactPoint],
-    ['11', AuthorityRole.SinglePointOfContact],
-    ['19', AuthorityRole.OtherSinglePointOfContact],
-  ]);
-
-  /**
    * XZuFi code list `xzufi.anschrifttyp` (version 4) → domain address type.
    */
   private static readonly ADDRESS_TYPE_BY_CODE = new Map<
@@ -161,12 +130,4 @@ export class PvogAuthorityClient extends BaseHttpClient {
     ['09', AuthorityContactType.Web],
     ['10', AuthorityContactType.Web],
   ]);
-}
-
-/**
- * Upstream publishes empty strings for absent values; the domain contract
- * omits them instead.
- */
-function nonEmpty(value: string | undefined): string | undefined {
-  return value !== undefined && value.trim() !== '' ? value : undefined;
 }

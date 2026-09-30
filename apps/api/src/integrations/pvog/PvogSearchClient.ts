@@ -1,4 +1,5 @@
 import {
+  AuthorityRole,
   ServiceSectionType,
   type Location,
   type LocationSuggestion,
@@ -11,7 +12,11 @@ import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../config';
 import { BaseHttpClient } from '../common/BaseHttpClient';
 import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
+import { nonEmpty } from '../common/OptionalText';
+import { AuthorityReference } from './model/AuthorityReference';
+import { ServiceDescriptionDetail } from './model/ServiceDescriptionDetail';
 import { ServiceSearchOptions } from './model/ServiceSearchOptions';
+import { WireAuthorityReference } from './wire/WireAuthorityReference';
 import { WireLocationDetails } from './wire/WireLocationDetails';
 import { WireLocationSuggestion } from './wire/WireLocationSuggestion';
 import { WireOnlineService } from './wire/WireOnlineService';
@@ -91,13 +96,15 @@ export class PvogSearchClient extends BaseHttpClient {
   }
 
   /**
-   * Canonical detail view of one service description within a territory.
+   * Canonical detail view of one service description within a territory,
+   * together with the organisation units it names as responsible (their
+   * roles are resolved upstream for the territory and hierarchy setting).
    */
   async getServiceDescription(
     id: string,
     regionalKey: string,
     useRegionalHierarchy: boolean,
-  ): Promise<PublicServiceDescription> {
+  ): Promise<ServiceDescriptionDetail> {
     const wire = await this.getModel(
       WireServiceDescription,
       `/v6/servicedescriptions/${encodeURIComponent(id)}/detail`,
@@ -106,7 +113,12 @@ export class PvogSearchClient extends BaseHttpClient {
         useArsHierarchy: useRegionalHierarchy,
       },
     );
-    return this.toServiceDescription(wire);
+    return {
+      service: this.toServiceDescription(wire),
+      authorityReferences: (wire.authorities ?? []).map((reference) =>
+        this.toAuthorityReference(reference),
+      ),
+    };
   }
 
   /**
@@ -239,6 +251,31 @@ export class PvogSearchClient extends BaseHttpClient {
       })),
     };
   }
+
+  private toAuthorityReference(
+    wire: WireAuthorityReference,
+  ): AuthorityReference {
+    return {
+      id: wire.id,
+      name: nonEmpty(wire.title),
+      role:
+        PvogSearchClient.ROLE_BY_CODE.get(wire.role?.code ?? '') ??
+        AuthorityRole.Other,
+    };
+  }
+
+  /**
+   * XZuFi code list `xzufi.zustaendigkeitsrolle` → domain role. Code "01"
+   * is not part of the current code-list version but is still published by
+   * PVOG (observed live on 2026-09-30).
+   */
+  private static readonly ROLE_BY_CODE = new Map<string, AuthorityRole>([
+    ['01', AuthorityRole.ResponsibleAuthorityAndContactPoint],
+    ['02', AuthorityRole.ResponsibleAuthority],
+    ['03', AuthorityRole.ContactPoint],
+    ['11', AuthorityRole.SinglePointOfContact],
+    ['19', AuthorityRole.OtherSinglePointOfContact],
+  ]);
 
   /**
    * Published section titles → domain section type; unknown titles fall back to Other.

@@ -81,15 +81,16 @@ the browser against the running API.
 
 ## Routes and endpoint coverage
 
-| Route              | Integrations API endpoints                                                       |
-| ------------------ | -------------------------------------------------------------------------------- |
-| `/`                | Redirects to `/services`                                                         |
-| `/locations`       | `GET /locations/suggestions`, `GET /locations`, `GET /locations/{regionalKey}`   |
-| `/services`        | `GET /services`                                                                  |
-| `/services/:id`    | `GET /services/{id}?regionalKey=`, `GET /services/{id}/authorities?regionalKey=` |
-| `/online-services` | `GET /online-services`                                                           |
-| `/catalog`         | `GET /catalog`, `GET /catalog/{serviceCatalogKey}`                               |
-| `/master-texts`    | `GET /master-texts/{editorialOfficeId}/{serviceId}`                              |
+| Route                   | Integrations API endpoints                                                       |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| `/`                     | Redirects to `/services`                                                         |
+| `/locations`            | `GET /locations/suggestions`, `GET /locations`, `GET /locations/{regionalKey}`   |
+| `/services`             | `GET /services`                                                                  |
+| `/services/:id`         | `GET /services/{id}?regionalKey=`, `GET /services/{id}/authorities?regionalKey=` |
+| `/services/:id/context` | `GET /services/{id}/context?regionalKey=`                                        |
+| `/online-services`      | `GET /online-services`                                                           |
+| `/catalog`              | `GET /catalog`, `GET /catalog/{serviceCatalogKey}`                               |
+| `/master-texts`         | `GET /master-texts/{editorialOfficeId}/{serviceId}`                              |
 
 All request-defining state is stored in URL search parameters so views survive
 refresh, can be shared, and work with browser Back and Forward navigation.
@@ -140,6 +141,17 @@ their type, contact channels with type and published label (web channels
 and websites open in a new tab), and the raw authorities response. An empty
 list is an explicit empty state; a 404 stays inline within that region.
 
+The detail page's "Inspect composed context" action opens
+`/services/:id/context` with the same URL parameters. That page loads
+`GET /services/{id}/context` in one query and renders the status first
+(success when complete, otherwise the unavailable parts as chips), then one
+region per part: the service (title, catalog keys, metadata, link back to
+the detail page), responsible authorities, online services (the shared
+online-service table), catalog entries (key, title, editorial office id,
+service id, service type) and master texts (one raw JSON block each), plus
+the raw context. A part listed as unavailable shows a warning instead of
+its empty content; a genuinely empty part says "None".
+
 ### Online services
 
 The `/online-services` form requires `regionalKey` and accepts optional
@@ -173,7 +185,8 @@ types. Request-only parameter types stay next to the query hook that owns them.
 Each endpoint has a resource-oriented React Query hook:
 
 - `useSuggestLocations`, `useResolveLocation`, `useLocation`
-- `useSearchServices`, `useService`, `useServiceAuthorities`
+- `useSearchServices`, `useService`, `useServiceAuthorities`,
+  `useServiceContext`
 - `useOnlineServices`
 - `useSearchCatalog`, `useCatalogEntry`
 - `useMasterText`
@@ -241,7 +254,7 @@ objects with `JsonViewer`. Open upstream links in a new tab with
 
 ## Completion criteria
 
-- All ten integrations API endpoints are reachable and inspectable.
+- All eleven integrations API endpoints are reachable and inspectable.
 - Every display-defining value survives refresh through URL parameters.
 - TypeScript remains strict, with no `any` in `src/api/`.
 - Loading, empty, `400`, `404`, `502`, `504`, and retry behavior are explicit.

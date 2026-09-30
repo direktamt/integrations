@@ -7,6 +7,7 @@ import type {
   ParsedMasterText,
   PublicAuthority,
   PublicServiceDescription,
+  ServiceContext,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
 import { Injectable } from '@nestjs/common';
@@ -14,13 +15,15 @@ import { FimPortalClient } from './fim/FimPortalClient';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
 import { ServiceSearchOptions } from './pvog/model/ServiceSearchOptions';
+import { ServiceContextAssembler } from './ServiceContextAssembler';
 
 /**
  * Single entry point to external government data.
  *
  * Application code depends on this facade rather than individual upstream
  * clients, allowing storage, caching or provider implementations to evolve
- * without changing consumers.
+ * without changing consumers. Compositions of several upstream resources
+ * live here (or in a dedicated assembler), never inside the adapters.
  */
 @Injectable()
 export class GovDataFacade {
@@ -28,6 +31,7 @@ export class GovDataFacade {
     private readonly pvogSearchClient: PvogSearchClient,
     private readonly pvogAuthorityClient: PvogAuthorityClient,
     private readonly fimPortalClient: FimPortalClient,
+    private readonly serviceContextAssembler: ServiceContextAssembler,
   ) {}
 
   /**
@@ -57,28 +61,51 @@ export class GovDataFacade {
   /**
    * Canonical detail view of one service description (e.g. for a deep link).
    */
-  getServiceDescription(
+  async getServiceDescription(
     id: string,
     regionalKey: string,
     useRegionalHierarchy: boolean,
   ): Promise<PublicServiceDescription> {
-    return this.pvogSearchClient.getServiceDescription(
+    const detail = await this.pvogSearchClient.getServiceDescription(
       id,
       regionalKey,
       useRegionalHierarchy,
     );
+
+    return detail.service;
   }
 
   /**
    * Authorities responsible for one service within a territory, with their
-   * addresses and contact channels; empty when the service names none.
+   * addresses and contact channels; empty when the service names none. The
+   * service detail supplies the references and roles, the organisation-unit
+   * detail the contact data.
    */
-  listServiceAuthorities(
+  async listServiceAuthorities(
     serviceId: string,
     regionalKey: string,
     useRegionalHierarchy: boolean,
   ): Promise<PublicAuthority[]> {
-    return this.pvogAuthorityClient.listServiceAuthorities(
+    const detail = await this.pvogSearchClient.getServiceDescription(
+      serviceId,
+      regionalKey,
+      useRegionalHierarchy,
+    );
+
+    return this.pvogAuthorityClient.listAuthorities(detail.authorityReferences);
+  }
+
+  /**
+   * Everything known about one service within a territory, composed from
+   * PVOG and FIM; auxiliary parts degrade to empty lists with a status entry
+   * when their upstream fails, the service itself is mandatory.
+   */
+  getServiceContext(
+    serviceId: string,
+    regionalKey: string,
+    useRegionalHierarchy: boolean,
+  ): Promise<ServiceContext> {
+    return this.serviceContextAssembler.assemble(
       serviceId,
       regionalKey,
       useRegionalHierarchy,
