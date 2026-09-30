@@ -871,8 +871,58 @@ deprecated in favour of `v3/verwaltungsobjekte/xzufi-2-3-1`.
 
 ## Verification procedure
 
-Unit tests never call these APIs. Before a release, or whenever an upstream
-change is announced, re-verify the implemented endpoints manually:
+Unit tests never call these APIs. The implemented surface is verified
+against the live APIs in two ways: automatically once a week, and manually
+before a release or whenever an upstream change is announced.
+
+### Automated contract-drift verification
+
+`npm run verify:contracts` (`apps/api/scripts/VerifyUpstreamContracts.ts`)
+fires one read-only reference request per implemented endpoint — the probes
+in `apps/api/src/contractDrift/UpstreamProbeCatalog.ts`, using the Köln
+identifiers of this handbook and the smallest useful result sizes — and
+classifies what it sees. The workflow
+`.github/workflows/contract-drift.yml` runs it every Monday at 06:00 UTC and
+on manual dispatch; the normal CI never calls the government APIs.
+
+| Check                                                   | Wire endpoints            | Raw endpoints (JZuFi, parsed-xzufi) |
+| ------------------------------------------------------- | ------------------------- | ----------------------------------- |
+| HTTP status (2xx expected; redirects are not followed)  | yes                       | yes                                 |
+| `application/json` content type and parseable body      | yes                       | yes                                 |
+| Transformation into the wire model + class-validator    | yes                       | no (documented instability instead) |
+| Undeclared JSON fields (additive drift)                 | yes                       | no                                  |
+| `X-Pvog-Deprecated` header                              | yes                       | yes                                 |
+| Pagination (cursor usable, repeated cursor, final page) | `/v1beta2/onlineservices` | —                                   |
+
+Classification and policy:
+
+| Class                    | Meaning                                                                                               | Run result                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `BREAKING`               | error status, redirect to another host, non-JSON body, wire-contract violation, unusable cursor       | fails, `::error` annotation      |
+| `DEPRECATED`             | `X-Pvog-Deprecated: true` on an endpoint in use (a deprecated endpoint in use is treated as breaking) | fails, `::error` annotation      |
+| `ADDITIVE`               | undeclared upstream fields beyond the baseline in the probe catalog                                   | green, `::warning` annotation    |
+| `COSMETIC`               | difference without effect, e.g. a 2xx other than 200                                                  | green, listed                    |
+| `INFRASTRUCTURE_FAILURE` | no conclusive answer after 3 attempts (no network, timeout, upstream 5xx/429)                         | green, summary says inconclusive |
+
+Every run writes a job summary with one row per probe (provider, endpoint,
+status, contract, deprecation, finding). Transient failures are retried with
+a bounded back-off; an inconclusive run is never reported as drift. The
+probe catalog carries a baseline of upstream fields the wire models
+deliberately ignore (state of 2026-09-30); a new upstream field shows up as
+`ADDITIVE` until it is added to a wire model or to the baseline on purpose.
+The workflow does not commit anything: after investigating a finding, a
+developer updates the wire models, the baseline and the verification date
+of this handbook by hand.
+
+The engine (`apps/api/src/contractDrift/`) is unit-tested on fixtures for a
+missing required field, an additive field, a wrong type, the deprecation
+header, invalid JSON and non-JSON content, 4xx, redirects, transport
+failures, timeouts, persistent 5xx and the pagination cases.
+
+### Manual re-verification
+
+Before a release, or whenever an upstream change is announced, re-verify the
+implemented endpoints manually:
 
 1. Enumerate the endpoints used in `apps/api/src/integrations/*/*Client.ts`
    and compare them with the ✅ entries above; any drift is a finding.
@@ -910,6 +960,11 @@ checklist for coding agents.
 
 ## Changelog
 
+- **2026-09-30** (contract-drift monitoring): automated live verification
+  added (`npm run verify:contracts`, weekly workflow `contract-drift.yml`)
+  covering all 14 implemented endpoints; first run: 14 × OK, no breaking
+  drift, no deprecation header; the undeclared-field baseline of the probe
+  catalog recorded.
 - **2026-09-30** (service-search versions): `/v8beta1/servicedescriptions`
   verified live and implemented as the opt-in adapter
   `PvogV8BetaServiceSearchProvider` (1.3.1); v7 stays the default. Parameter

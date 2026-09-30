@@ -19,6 +19,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "verify:contracts": "npm run verify:contracts --workspace @direktamt/integrations-api",
     "verify:pvog-service-search-compat": "npm run verify:pvog-service-search-compat --workspace @direktamt/integrations-api",
     "prepare": "husky"
   },

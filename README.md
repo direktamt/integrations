@@ -231,8 +231,18 @@ npm run check        # lint, typecheck, test, build
 
 CI runs `npm ci` followed by lint, typecheck, test and build on every push and
 pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Unit
-tests never call the upstream APIs. Live contract verification against PVOG
-and FIM is a separate manual procedure described in the handbook.
+tests never call the upstream APIs.
+
+Contract drift of the live PVOG and FIM APIs is checked separately:
+`npm run verify:contracts` fires one read-only reference request per
+implemented endpoint, validates status, JSON, wire models, deprecation
+headers and pagination, and classifies findings as BREAKING, ADDITIVE,
+DEPRECATED, COSMETIC or INFRASTRUCTURE_FAILURE. The workflow
+[`.github/workflows/contract-drift.yml`](.github/workflows/contract-drift.yml)
+runs it weekly and on demand with a job summary; breaking drift and
+deprecated endpoints fail the run, an unreachable upstream is reported as
+inconclusive rather than as drift. Details and the manual procedure are in
+the handbook.
 
 No UI test runner is currently configured; the console is checked through
 TypeScript, ESLint and a production build.

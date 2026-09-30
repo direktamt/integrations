@@ -1,0 +1,37 @@
+name: Upstream contract drift
+
+# Live smoke verification of the implemented PVOG and FIM endpoints. Runs
+# weekly and on demand only; the normal CI stays network-independent. No
+# secrets: both upstream APIs are public and unauthenticated.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify PVOG and FIM contracts (live)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Exit code 1 = breaking drift or a deprecated endpoint in use (see the
+      # job summary for the affected endpoints); infrastructure failures are
+      # reported as inconclusive and do not fail the run.
+      - name: Verify upstream contracts
+        run: npm run verify:contracts

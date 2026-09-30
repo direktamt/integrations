@@ -50,6 +50,7 @@ src/
   Main.ts                            # bootstrap: CORS, validation pipe, exception filter, Swagger
   AppModule.ts
   config.ts                          # the only place that reads process.env
+  contractDrift/                     # live contract-drift verification engine (probes, classification, summary)
   api/                               # HTTP layer
     ApiModule.ts
     controller/                      # one controller per resource
@@ -80,6 +81,9 @@ src/
       wire/                          # validated upstream JSON contracts
 test/
   FetchStub.ts                       # fetch stand-in for unit tests
+scripts/
+  VerifyUpstreamContracts.ts         # npm run verify:contracts (weekly workflow, manual runs)
+  VerifyPvogServiceSearchCompatibility.ts  # npm run verify:pvog-service-search-compat
 ```
 
 ## Integration boundary
@@ -212,8 +216,12 @@ validation, error mapping, timeout), the PVOG and FIM mapping code including
 online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the online-service → authorities composition (de-duplication, concurrency cap), the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the concurrency helper, the raw JZuFi pass-through (envelope, unchanged body, path encoding, error mapping, log hygiene), both service-search adapters and their semantic compatibility on equivalent fixtures, the version parsing and adapter selection, the request DTO limits, and the status mapping of
 `UpstreamExceptionFilter`.
 
-Live verification of the upstream contracts is a manual procedure, see
-[`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md).
+Live verification of the upstream contracts runs outside the unit tests:
+`npm run verify:contracts` probes every implemented endpoint and classifies
+drift (the engine in `src/contractDrift/` is itself unit-tested on
+fixtures), and the weekly `contract-drift.yml` workflow runs it with a job
+summary. See [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md), Verification
+procedure, for the policy and the manual procedure.
 
 ## Conventions
 

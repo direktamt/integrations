@@ -36,6 +36,17 @@ before integration consumers encounter it.
 
 Base URLs: `https://pvog.fitko.net/suchdienst/api`, `https://fimportal.de/api`.
 
+## Automated form
+
+`npm run verify:contracts` runs this procedure for every endpoint of the
+table (probe catalog: `apps/api/src/contractDrift/UpstreamProbeCatalog.ts`)
+and classifies the findings; the weekly workflow
+`.github/workflows/contract-drift.yml` runs it with a job summary. Use the
+manual procedure below to investigate a finding, to verify an endpoint that
+is not implemented yet, or when the runner had no network. Keep the probe
+catalog in step with this table whenever a client gains or loses an
+endpoint.
+
 ## Procedure
 
 1. Fire each reference request against the live API. Record the HTTP status

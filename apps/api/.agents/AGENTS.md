@@ -120,7 +120,12 @@ npm run lint --workspace @direktamt/integrations-api
 
 8. **Tests.** Unit tests live next to the code as `*.spec.ts` and stub
    `fetch` through `test/FetchStub.ts`; they must never reach the network.
-   Fixtures are small and synthetic.
+   Fixtures are small and synthetic. Live upstream checks exist only as
+   `scripts/` entry points (`npm run verify:contracts`,
+   `npm run verify:pvog-service-search-compat`) and the scheduled
+   `contract-drift.yml` workflow — never in `npm test` or the PR CI. A new
+   or removed upstream endpoint changes `src/contractDrift/UpstreamProbeCatalog.ts`
+   in the same commit.
 
 ## Gotchas
 
