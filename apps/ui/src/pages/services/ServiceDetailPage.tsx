@@ -1,5 +1,6 @@
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import { Box, Button, Stack, Typography } from '@mui/material';
 import {
   Link as RouterLink,
@@ -56,6 +57,13 @@ export function ServiceDetailPage() {
               to={`/services/${encodeURIComponent(id)}/context?${searchParams.toString()}`}
             >
               Inspect composed context
+            </Button>
+            <Button
+              startIcon={<DataObjectIcon />}
+              component={RouterLink}
+              to={`/raw?id=${encodeURIComponent(id)}`}
+            >
+              Raw JZuFi 2.3
             </Button>
             <Button
               startIcon={<ArrowBackIcon />}

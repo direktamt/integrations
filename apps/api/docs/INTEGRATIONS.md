@@ -17,11 +17,11 @@ are listed for reference only.
 
 ## Overview
 
-| API                    | Base URL                                | Auth                 | Integration role                                                                                                                  |
-| ---------------------- | --------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| PVOG Suchdienst        | `https://pvog.fitko.net/suchdienst/api` | none                 | Implemented: location autocomplete and resolution, service search, service details, responsible authorities, online-service links |
-| FIM Portal             | `https://fimportal.de/api`              | none                 | Implemented: LeiKa service catalog, federal master texts                                                                          |
-| PVOG Bereitstelldienst | issued after approval                   | application required | Reference / not implemented: bulk access to the PVOG data set                                                                     |
+| API                    | Base URL                                | Auth                 | Integration role                                                                                                                                             |
+| ---------------------- | --------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PVOG Suchdienst        | `https://pvog.fitko.net/suchdienst/api` | none                 | Implemented: location autocomplete and resolution, service search, service details, responsible authorities, online-service links, raw JZuFi representations |
+| FIM Portal             | `https://fimportal.de/api`              | none                 | Implemented: LeiKa service catalog, federal master texts                                                                                                     |
+| PVOG Bereitstelldienst | issued after approval                   | application required | Reference / not implemented: bulk access to the PVOG data set                                                                                                |
 
 Status labels used in this document:
 
@@ -511,7 +511,67 @@ Wire models: `WireOnlineServiceAuthoritiesResponse` →
 `WireOnlineServiceAuthority`, `WireOnlineServiceAuthorityRole`.
 Used by `GET /online-services/{id}/authorities`.
 
-### 1.8 Deprecated endpoints
+### 1.8 JZuFi representations ✅ (implemented)
+
+```
+GET /v1/servicedescriptions/{id}/jzufi-2-3?validdate=   # service description as JZuFi 2.3
+GET /v1/onlineservices/{id}/jzufi-2-3?validdate=        # online service as JZuFi 2.3
+```
+
+JZuFi is the JSON form of the XZuFi standard (2.3.1); these endpoints
+return the provider's canonical object without the Suchdienst's search
+model. Both are current (`v1`, tag "JZuFi"), not marked deprecated, and
+replace the deprecated `/v3/servicedescriptions/jzufi` (1.9). The optional
+`validdate` (`yyyy-MM-dd`) is not exposed by this project. The same
+resources exist as `jzufi-2-2` and for organisation units
+(`/v1/organisationunits/{id}/jzufi-2-3`); they are not implemented.
+
+Verified on 2026-09-30: `Accept: application/json` (or no `Accept` header)
+answers 200 `application/json`; `Accept: application/xml` answers 401. An
+unknown id yields the usual 404 body. The Köln reference service answered
+with about 24 KB, its online service with about 1.2 KB.
+
+Request:
+
+```
+GET https://pvog.fitko.net/suchdienst/api/v1/servicedescriptions/L100002.LB.121407320/jzufi-2-3
+```
+
+Response (top-level keys only; the body is XZuFi vocabulary):
+
+```json
+{
+  "id": {
+    "value": "121407320",
+    "schemeAgencyID": "L100002",
+    "schemeID": "TSA_IDNRW_OID"
+  },
+  "idSekundaer": [
+    {
+      "value": "99115005104000",
+      "schemeAgencyID": "GK_LEIKA",
+      "schemeID": "LEIKA_ID"
+    }
+  ],
+  "struktur": "...",
+  "statusKatalog": "...",
+  "statusBibliothek": "...",
+  "referenzLeistungsschluessel": "...",
+  "modulText": "...",
+  "modulTextIndividuell": "..."
+}
+```
+
+The online-service object starts with `bezeichnung`, `bezeichnungIntern`,
+`durchfuehrungWeitereSprachen`, `id`, `kennzeichenOeffentlichAnzeigen`,
+`link`, `sprachversion`, `status`.
+
+Wire model: none by design — the body is passed through as a JSON value
+inside the `RawSourceResponse` envelope; only the HTTP status and JSON
+parseability are checked. Used by `GET /raw/pvog/services/{id}/jzufi-2-3`
+and `GET /raw/pvog/online-services/{id}/jzufi-2-3`.
+
+### 1.9 Deprecated endpoints
 
 Listed on the official deprecations page (state of 2026-09-30). All were
 deprecated with release 9.17.4 (May 2026) and are scheduled for removal in
@@ -521,13 +581,13 @@ November 2026. Do not build on them.
 | ---------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
 | `GET /v5/servicedescriptions/{ars}/detail?q={lbid}`  | `GET /v6/servicedescriptions/{lbid}/detail?ars=` (1.4) | ✅ still answers 200, with `X-Pvog-Deprecated: true`                    |
 | `GET /v3/relations/{ars}/jzufi?lbids=`               | `GET /v1/relations/jzufi-2-3?ars=&lbids=` ✅           | 400 without the XZuFi version header; shutdown announced for 2026-11-26 |
-| `GET /v3/servicedescriptions/jzufi`                  | `GET /v1/servicedescriptions/{id}/jzufi-2-3`           | not exercised                                                           |
+| `GET /v3/servicedescriptions/jzufi`                  | `GET /v1/servicedescriptions/{id}/jzufi-2-3` ✅ (1.8)  | 400 without `id`, with `X-Pvog-Deprecated: true`                        |
 | `GET /v2/organisationunits/jzufi`                    | `GET /v1/organisationunits/{id}/jzufi-2-3`             | not exercised                                                           |
 | `GET /v2/locations`, `GET /v2/locations/suggestions` | `/v3/locations/*` (1.1, 1.2)                           | not exercised                                                           |
 
 None of them is used by this project.
 
-### 1.9 Watch items
+### 1.10 Watch items
 
 - `GET /v8beta1/servicedescriptions?ars={ars}&q={query}` ✅ is a new beta
   search endpoint (release 9.21, August 2026) with a reduced request and
@@ -538,7 +598,7 @@ None of them is used by this project.
 - `GET /v1beta2/onlineservices` is beta, see 1.6.
 - `GET /v1beta2/onlineservices/{odId}/organisations` is beta, see 1.7.
 
-### 1.10 Auxiliary endpoints (reference, not implemented)
+### 1.11 Auxiliary endpoints (reference, not implemented)
 
 Verified with a live request on 2026-09-30 unless noted:
 
@@ -750,6 +810,11 @@ checklist for coding agents.
 
 ## Changelog
 
+- **2026-09-30** (raw JZuFi): `/v1/servicedescriptions/{id}/jzufi-2-3` and
+  `/v1/onlineservices/{id}/jzufi-2-3` verified live (200 JSON, 401 for an
+  XML `Accept`, 404 for an unknown id) and implemented as raw pass-through
+  (1.8); `/v3/servicedescriptions/jzufi` confirmed deprecated with the
+  header set.
 - **2026-09-30** (online-service authorities):
   `/v1beta2/onlineservices/{odId}/organisations` verified live (200, no
   deprecation header, 404 for an unknown id) and implemented (1.7) for

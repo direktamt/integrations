@@ -81,16 +81,17 @@ the browser against the running API.
 
 ## Routes and endpoint coverage
 
-| Route                   | Integrations API endpoints                                                       |
-| ----------------------- | -------------------------------------------------------------------------------- |
-| `/`                     | Redirects to `/services`                                                         |
-| `/locations`            | `GET /locations/suggestions`, `GET /locations`, `GET /locations/{regionalKey}`   |
-| `/services`             | `GET /services`                                                                  |
-| `/services/:id`         | `GET /services/{id}?regionalKey=`, `GET /services/{id}/authorities?regionalKey=` |
-| `/services/:id/context` | `GET /services/{id}/context?regionalKey=`                                        |
-| `/online-services`      | `GET /online-services`, `GET /online-services/{id}/authorities`                  |
-| `/catalog`              | `GET /catalog`, `GET /catalog/{serviceCatalogKey}`                               |
-| `/master-texts`         | `GET /master-texts/{editorialOfficeId}/{serviceId}`                              |
+| Route                   | Integrations API endpoints                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `/`                     | Redirects to `/services`                                                                |
+| `/locations`            | `GET /locations/suggestions`, `GET /locations`, `GET /locations/{regionalKey}`          |
+| `/services`             | `GET /services`                                                                         |
+| `/services/:id`         | `GET /services/{id}?regionalKey=`, `GET /services/{id}/authorities?regionalKey=`        |
+| `/services/:id/context` | `GET /services/{id}/context?regionalKey=`                                               |
+| `/online-services`      | `GET /online-services`, `GET /online-services/{id}/authorities`                         |
+| `/catalog`              | `GET /catalog`, `GET /catalog/{serviceCatalogKey}`                                      |
+| `/master-texts`         | `GET /master-texts/{editorialOfficeId}/{serviceId}`                                     |
+| `/raw`                  | `GET /raw/pvog/services/{id}/jzufi-2-3`, `GET /raw/pvog/online-services/{id}/jzufi-2-3` |
 
 All request-defining state is stored in URL search parameters so views survive
 refresh, can be shared, and work with browser Back and Forward navigation.
@@ -176,6 +177,17 @@ accepts optional `source` with default `primary`. The pass-through response is
 shown in `JsonViewer`. A missing pair is an inline empty state, not a global
 error.
 
+### Raw sources
+
+The `/raw` page loads a provider representation instead of a normalized
+model: `resource` (`services` by default, or `online-services`) and the
+PVOG `id` live in the URL. The response envelope (`provider`,
+`representation`) is shown as chips and the `data` body in `JsonViewer`,
+expanded, with the upstream field names untouched. A missing id is an
+inline empty state. The service detail page links to its raw
+representation ("Raw JZuFi 2.3"). The page renders raw JSON only; it does
+not interpret the XZuFi structure.
+
 ## API and query layer
 
 `ApiClient` reads `VITE_API_BASE_URL`, sends `Accept: application/json`, and
@@ -194,6 +206,7 @@ Each endpoint has a resource-oriented React Query hook:
 - `useOnlineServices`, `useOnlineServiceAuthorities`
 - `useSearchCatalog`, `useCatalogEntry`
 - `useMasterText`
+- `useRawPvogJzufi`
 
 Query keys include every request-defining input. Queries remain disabled until
 all required committed URL values are present. Automatic retries and
@@ -258,7 +271,7 @@ objects with `JsonViewer`. Open upstream links in a new tab with
 
 ## Completion criteria
 
-- All twelve integrations API endpoints are reachable and inspectable.
+- All fourteen integrations API endpoints are reachable and inspectable.
 - Every display-defining value survives refresh through URL parameters.
 - TypeScript remains strict, with no `any` in `src/api/`.
 - Loading, empty, `400`, `404`, `502`, `504`, and retry behavior are explicit.

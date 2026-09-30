@@ -5,6 +5,7 @@ import { UpstreamHttpException } from './common/exceptions/UpstreamHttpException
 import { FimPortalClient } from './fim/FimPortalClient';
 import { GovDataFacade } from './GovDataFacade';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
+import { PvogRawClient } from './pvog/PvogRawClient';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
 import { ServiceContextAssembler } from './ServiceContextAssembler';
 
@@ -62,6 +63,7 @@ describe('GovDataFacade', () => {
   const facade = new GovDataFacade(
     pvogSearchClient,
     pvogAuthorityClient,
+    new PvogRawClient(),
     fimPortalClient,
     new ServiceContextAssembler(
       pvogSearchClient,

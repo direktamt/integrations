@@ -57,6 +57,13 @@ npm run lint --workspace @direktamt/integrations-api
      into controllers/use cases. Compositions across upstream resources live
      in the facade or in a dedicated assembler next to it
      (`ServiceContextAssembler`), never inside an adapter.
+   - Raw provider representations live under `/raw/{provider}` only
+     (`RawPvogController`, `PvogRawClient`): a static whitelist of upstream
+     resources, the caller supplies an object id and nothing else, the body
+     is a `JsonValue` inside `RawSourceResponse` with no wire model and no
+     compatibility guarantee. Never add a generic proxy or let a caller
+     choose hosts, paths or headers; never build normalized contracts on a
+     raw body.
    - New external API → new subfolder with `{Name}Module`, `{Name}Client`,
      wire models in `wire/`, one class per file. API response models exposed to
      consumers go in `../../packages/contracts/`, one

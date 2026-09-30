@@ -52,6 +52,7 @@ src/
   api/                               # HTTP layer
     ApiModule.ts
     controller/                      # one controller per resource
+                                     #   RawPvogController: /raw/pvog, static whitelist of provider representations
     request/                         # validated query DTOs
     filter/UpstreamExceptionFilter.ts  # integration failures -> 404 / 502 / 504
   integrations/                      # upstream adapters
@@ -64,6 +65,7 @@ src/
     pvog/                            # PVOG Suchdienst adapter
       PvogSearchClient.ts            # locations, services, online services
       PvogAuthorityClient.ts         # responsible organisation units (authorities)
+      PvogRawClient.ts               # JZuFi 2.3 pass-through of a service description or online service
       model/ServiceSearchOptions.ts  # integration-only input options
       wire/                          # validated upstream JSON contracts
     fim/                             # FIM Portal adapter
@@ -126,6 +128,20 @@ catalog entry without a master text (404) — is a complete result. Errors
 that are not upstream failures propagate as 500. Adapters never orchestrate
 across resources.
 
+## Raw provider representations
+
+`/raw/pvog/services/{id}/jzufi-2-3` and
+`/raw/pvog/online-services/{id}/jzufi-2-3` return the upstream JZuFi 2.3
+body inside a `RawSourceResponse` envelope (`provider`, `representation`,
+`data`). `data` is typed as `JsonValue` and is the parsed upstream body
+without any mapping; it follows the provider's contract and receives no
+compatibility guarantee, unlike every model outside `/raw`. The upstream
+paths are fixed in `PvogRawClient`; the caller supplies an object id that
+is URL-encoded into its path segment, so no host, path, query or header is
+caller-controlled. Validation is limited to what `BaseHttpClient` always
+does: a non-2xx status or a body that is not JSON becomes an upstream
+exception (404 → 404, other statuses → 502, unparseable body → 502).
+
 ## Request validation
 
 Query DTOs in `api/request/` validate the documented upstream limits locally
@@ -158,7 +174,7 @@ values such as search terms, postal codes or regional keys are never logged.
 against a stubbed `fetch` (`test/FetchStub.ts`); they never reach the
 network. The tests cover `BaseHttpClient` (query building, parsing,
 validation, error mapping, timeout), the PVOG and FIM mapping code including
-online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the online-service → authorities composition (de-duplication, concurrency cap), the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the concurrency helper, the request DTO limits, and the status mapping of
+online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the online-service → authorities composition (de-duplication, concurrency cap), the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the concurrency helper, the raw JZuFi pass-through (envelope, unchanged body, path encoding, error mapping, log hygiene), the request DTO limits, and the status mapping of
 `UpstreamExceptionFilter`.
 
 Live verification of the upstream contracts is a manual procedure, see

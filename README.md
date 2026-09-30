@@ -110,7 +110,7 @@ are documented in the handbook:
 
 ## Current capabilities
 
-The integrations API exposes twelve read-only endpoints:
+The integrations API exposes twelve normalized read-only endpoints and two raw provider endpoints:
 
 | Endpoint                                            | Upstream        | Purpose                                                                                                           |
 | --------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -126,8 +126,30 @@ The integrations API exposes twelve read-only endpoints:
 | `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog                                                                   |
 | `GET /catalog/{serviceCatalogKey}`                  | FIM Portal      | One catalog entry                                                                                                 |
 | `GET /master-texts/{editorialOfficeId}/{serviceId}` | FIM Portal      | Parsed federal master text (unvalidated pass-through)                                                             |
+| `GET /raw/pvog/services/{id}/jzufi-2-3`             | PVOG Suchdienst | Raw JZuFi 2.3 body of a service description (provider contract)                                                   |
+| `GET /raw/pvog/online-services/{id}/jzufi-2-3`      | PVOG Suchdienst | Raw JZuFi 2.3 body of an online service (provider contract)                                                       |
 
 The API serves an OpenAPI document and Swagger UI at `/docs`.
+
+### Normalized API and raw provider representations
+
+Everything outside `/raw` is the normalized API: English identifiers,
+validated wire models, stable shared contracts, and the compatibility
+promise of this project. The `/raw/{provider}` namespace is different by
+design. It returns the provider's own JSON representation — currently the
+JZuFi 2.3 form of a PVOG service description or online service — wrapped in
+a small envelope (`provider`, `representation`, `data`) and otherwise
+untouched, for consumers that need the canonical XZuFi structure rather
+than a normalized model.
+
+> Raw endpoints intentionally expose provider-specific contracts and do not
+> receive DirektAmt compatibility guarantees.
+
+The set of raw resources is a static whitelist inside the integration
+layer: callers pass an object id, never a host, path or header, and the
+request still goes through the same HTTP client, timeout and error mapping
+as every normalized call. Only a successful status and a parseable JSON body
+are checked; there is no wire model and no normalization.
 
 ## Repository structure
 

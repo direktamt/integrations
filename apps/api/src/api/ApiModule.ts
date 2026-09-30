@@ -4,6 +4,7 @@ import { CatalogController } from './controller/CatalogController';
 import { LocationController } from './controller/LocationController';
 import { MasterTextController } from './controller/MasterTextController';
 import { OnlineServiceController } from './controller/OnlineServiceController';
+import { RawPvogController } from './controller/RawPvogController';
 import { ServiceController } from './controller/ServiceController';
 
 /**
@@ -18,6 +19,7 @@ import { ServiceController } from './controller/ServiceController';
     OnlineServiceController,
     CatalogController,
     MasterTextController,
+    RawPvogController,
   ],
 })
 export class ApiModule {}

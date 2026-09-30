@@ -7,6 +7,7 @@ import type {
   OnlineServiceAuthority,
   ParsedMasterText,
   PublicServiceDescription,
+  RawSourceResponse,
   ServiceAuthority,
   ServiceContext,
   ServiceSearchResult,
@@ -14,6 +15,7 @@ import type {
 import { Injectable } from '@nestjs/common';
 import { FimPortalClient } from './fim/FimPortalClient';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
+import { PvogRawClient } from './pvog/PvogRawClient';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
 import { ServiceSearchOptions } from './pvog/model/ServiceSearchOptions';
 import { ServiceContextAssembler } from './ServiceContextAssembler';
@@ -31,6 +33,7 @@ export class GovDataFacade {
   constructor(
     private readonly pvogSearchClient: PvogSearchClient,
     private readonly pvogAuthorityClient: PvogAuthorityClient,
+    private readonly pvogRawClient: PvogRawClient,
     private readonly fimPortalClient: FimPortalClient,
     private readonly serviceContextAssembler: ServiceContextAssembler,
   ) {}
@@ -166,6 +169,22 @@ export class GovDataFacade {
       regionalKey,
       serviceCatalogKeys,
     );
+  }
+
+  /**
+   * Raw JZuFi 2.3 representation of one service description as published
+   * by PVOG; provider contract, not a normalized model.
+   */
+  getServiceDescriptionJzufi(id: string): Promise<RawSourceResponse> {
+    return this.pvogRawClient.getServiceDescriptionJzufi(id);
+  }
+
+  /**
+   * Raw JZuFi 2.3 representation of one online service as published by
+   * PVOG; provider contract, not a normalized model.
+   */
+  getOnlineServiceJzufi(id: string): Promise<RawSourceResponse> {
+    return this.pvogRawClient.getOnlineServiceJzufi(id);
   }
 
   /**

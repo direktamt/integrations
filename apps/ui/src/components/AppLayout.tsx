@@ -1,5 +1,6 @@
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ArticleIcon from '@mui/icons-material/Article';
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import LanguageIcon from '@mui/icons-material/Language';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import PlaceIcon from '@mui/icons-material/Place';
@@ -35,6 +36,7 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
   },
   { label: 'Catalog', path: '/catalog', icon: <ListAltIcon /> },
   { label: 'Master texts', path: '/master-texts', icon: <ArticleIcon /> },
+  { label: 'Raw sources', path: '/raw', icon: <DataObjectIcon /> },
 ];
 
 /**
