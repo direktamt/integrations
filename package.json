@@ -1,0 +1,36 @@
+{
+  "name": "@direktamt/integrations",
+  "version": "0.0.0",
+  "description": "Open-source integration layer for German public-administration APIs (PVOG, FIM).",
+  "license": "Apache-2.0",
+  "private": true,
+  "workspaces": [
+    "packages/contracts",
+    "apps/api",
+    "apps/ui"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:ui\"",
+    "dev:api": "npm run start:dev --workspace @direktamt/integrations-api",
+    "dev:ui": "npm run dev --workspace @direktamt/integrations-ui",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.1.0",
+    "prettier": "^3.9.5",
+    "typescript": "^5.7.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

@@ -1,0 +1,228 @@
+# DirektAmt Integrations UI
+
+Developer-facing inspection console for the DirektAmt integration layer.
+
+The UI is used to exercise normalized API endpoints, inspect live
+public-administration data and diagnose upstream contract behavior.
+
+It is not the end-user DirektAmt application. The UI is local, read-only, and
+intended for integration development, contract inspection, data-quality
+analysis, and upstream debugging. It provides shareable forms and result views
+for live public-administration data without requiring ad-hoc curl or Swagger
+sessions.
+
+## Stack
+
+- React 18 and strict TypeScript
+- Vite
+- Material UI 6
+- TanStack React Query 5
+- React Router 7
+- Axios through the typed `ApiClient`
+- DOMPurify for upstream HTML
+
+Server state belongs to React Query and local drafts belong to components. Do
+not add Redux, Zustand, or another global state library without a concrete
+cross-page client-state requirement.
+
+Response models come from the shared
+`@direktamt/integrations-contracts` workspace package.
+
+## Getting started
+
+Install dependencies and start both applications from the repository root:
+
+```bash
+npm install
+npm run dev
+```
+
+Alternatively, run the API and UI in separate terminals:
+
+```bash
+npm run dev:api
+npm run dev:ui
+```
+
+The default local addresses are:
+
+- UI: `http://localhost:5173`
+- API: `http://localhost:3000`
+
+The integrations API must be running for queries to return data.
+
+## Configuration
+
+Create `apps/ui/.env` when the API is not available at the default address.
+Vite reads the variable at build/start time.
+
+| Environment variable | Default                 | Purpose                   |
+| -------------------- | ----------------------- | ------------------------- |
+| `VITE_API_BASE_URL`  | `http://localhost:3000` | Integrations API base URL |
+
+See `.env.example` for the development template. The API's default CORS
+configuration already permits `http://localhost:5173`.
+
+## Commands
+
+Run these from the repository root:
+
+```bash
+npm run dev:ui
+npm run typecheck --workspace @direktamt/integrations-ui
+npm run lint --workspace @direktamt/integrations-ui
+npm run build --workspace @direktamt/integrations-ui
+npm run preview --workspace @direktamt/integrations-ui
+```
+
+No UI test runner is currently configured.
+
+## Routes and endpoint coverage
+
+| Route              | Integrations API endpoints                                                     |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `/`                | Redirects to `/services`                                                       |
+| `/locations`       | `GET /locations/suggestions`, `GET /locations`, `GET /locations/{regionalKey}` |
+| `/services`        | `GET /services`                                                                |
+| `/services/:id`    | `GET /services/{id}?regionalKey=`                                              |
+| `/online-services` | `GET /online-services`                                                         |
+| `/catalog`         | `GET /catalog`, `GET /catalog/{serviceCatalogKey}`                             |
+| `/master-texts`    | `GET /master-texts/{editorialOfficeId}/{serviceId}`                            |
+
+All request-defining state is stored in URL search parameters so views survive
+refresh, can be shared, and work with browser Back and Forward navigation.
+Local state is limited to drafts before submit or debounce.
+
+### Locations
+
+The `/locations` page contains three independent panels:
+
+- Suggest: 300 ms debounced autocomplete with relevance scores.
+- Resolve: `cityName` and `postalCode` inputs; at least one is required.
+- Reverse lookup: load one territory by `regionalKey` and render 404 inline.
+
+Location results expose copyable regional keys and can open a pre-filled
+service search. Updating one panel must preserve URL parameters owned by the
+other panels.
+
+### Services
+
+The service search exposes every `GET /services` parameter: `regionalKey` and
+`query` are required; `size`, `page`, `fuzzySearch`,
+`useRegionalHierarchy`, `lifeSituationCodes`, and `validDate` are optional.
+Defaults must match the API.
+
+Results use server-side pagination and show titles, service catalog keys, and
+section counts. Selecting a row opens the deep-linkable
+`/services/:id?regionalKey=...` detail page. The detail page renders all
+sections, links, official keys, sanitized upstream HTML, and the raw response.
+
+### Online services
+
+The `/online-services` form requires `regionalKey` and accepts optional
+comma-separated `serviceCatalogKeys`. Results show name, description, service
+catalog keys, external links, and `lastUpdatedAt`.
+
+### Catalog
+
+The `/catalog` form searches by required `term` with optional `limit` and
+`offset`. Results use server-side pagination. Selecting a row opens a dialog
+with the full catalog entry and a pre-filled link to its master text.
+
+### Master texts
+
+The `/master-texts` form requires `editorialOfficeId` and `serviceId` and
+accepts optional `source` with default `primary`. The pass-through response is
+shown in `JsonViewer`. A missing pair is an inline empty state, not a global
+error.
+
+## API and query layer
+
+`ApiClient` reads `VITE_API_BASE_URL`, sends `Accept: application/json`, and
+normalizes failures into `ApiError(status, details)`. Pages and components do
+not call axios or `fetch` directly.
+
+All response models are imported from
+`@direktamt/integrations-contracts`; the UI never declares mirror response
+types. Request-only parameter types stay next to the query hook that owns them.
+
+Each endpoint has a resource-oriented React Query hook:
+
+- `useSuggestLocations`, `useResolveLocation`, `useLocation`
+- `useSearchServices`, `useService`
+- `useOnlineServices`
+- `useSearchCatalog`, `useCatalogEntry`
+- `useMasterText`
+
+Query keys include every request-defining input. Queries remain disabled until
+all required committed URL values are present. Automatic retries and
+refetch-on-window-focus are disabled so requests in this inspection tool stay
+intentional.
+
+## Loading, empty, and error states
+
+Every query-driven region renders through `QueryStateGate`, which owns the idle
+hint, spinner, retry action, not-found handling, and explicit empty state.
+
+| Integrations API status | UI treatment                                                                |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `400` validation        | Inline form details through `ValidationErrorAlert`                          |
+| `404`                   | Inline empty/not-found state within the owning query region                 |
+| `502`                   | Retryable local state and “Government data source is unavailable.” snackbar |
+| `504`                   | Retryable local state and “Government data source timed out.” snackbar      |
+| Other or network        | Retryable local state and snackbar with the error message                   |
+
+The application mounts one global `ErrorSnackbar`, driven by React Query's
+global `QueryCache.onError`. It auto-hides after six seconds. Do not add
+page-level global snackbar hosts.
+
+## Source layout
+
+```text
+src/
+  Main.tsx                 # global providers and query error routing
+  App.tsx                  # route table and global snackbar host
+  api/
+    ApiClient.ts           # typed axios boundary
+    ApiError.ts            # normalized API errors
+    queries/               # one resource-oriented query-hook file per resource
+  components/              # primitives shared by at least two pages
+  pages/                   # route folders and page-private components
+```
+
+Use one component per PascalCase file. Keep page-private components in the page
+folder and move them to `src/components/` after a second page uses them. Pages,
+panels, and data-loading dialogs may call query hooks; presentational
+components receive data and callbacks through props.
+
+All identifiers and authored UI copy are English. German text may appear as
+upstream content or in explanatory labels for official terms such as ARS and
+LeiKa. The UI has no i18n layer.
+
+## Security
+
+PVOG service-section `text` is untrusted upstream HTML. Only `HtmlSection` may
+render it, and only after DOMPurify sanitization. Render arbitrary pass-through
+objects with `JsonViewer`. Open upstream links in a new tab with
+`rel="noreferrer"`.
+
+## Non-goals
+
+- Authentication or authorization
+- End-user workflows, onboarding, or product UX
+- Editing or other write operations
+- SEO or server-side rendering
+- Offline support or PWA behavior
+- Internationalization
+
+## Completion criteria
+
+- All nine integrations API endpoints are reachable and inspectable.
+- Every display-defining value survives refresh through URL parameters.
+- TypeScript remains strict, with no `any` in `src/api/`.
+- Loading, empty, `400`, `404`, `502`, `504`, and retry behavior are explicit.
+- Shared JSX is extracted after the second page needs it.
+- Build and lint succeed when validation is requested.
+
+See [`.agents/AGENTS.md`](.agents/AGENTS.md) for agent-facing implementation
+conventions.

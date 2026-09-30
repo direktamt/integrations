@@ -1,0 +1,93 @@
+import { Alert, Button, Stack, TextField } from '@mui/material';
+import { FormEvent, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import { useMasterText } from '../../api/queries/useMasterTextQueries';
+import { JsonViewer } from '../../components/JsonViewer';
+import { PageHeader } from '../../components/PageHeader';
+import { QueryStateGate } from '../../components/QueryStateGate';
+import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
+
+const DEFAULT_SOURCE = 'primary';
+
+/**
+ * GET /master-texts/{editorialOfficeId}/{serviceId} — upstream
+ * pass-through JSON, rendered raw; a 404 is an inline state.
+ */
+export function MasterTextsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editorialOfficeId = searchParams.get('editorialOfficeId') ?? '';
+  const serviceId = searchParams.get('serviceId') ?? '';
+  const source = searchParams.get('source') ?? '';
+  const [officeInput, setOfficeInput] = useState(editorialOfficeId);
+  const [serviceInput, setServiceInput] = useState(serviceId);
+  const [sourceInput, setSourceInput] = useState(source || DEFAULT_SOURCE);
+
+  const masterTextQuery = useMasterText(
+    editorialOfficeId,
+    serviceId,
+    source || undefined,
+  );
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const next = new URLSearchParams();
+    if (officeInput) next.set('editorialOfficeId', officeInput);
+    if (serviceInput) next.set('serviceId', serviceInput);
+    if (sourceInput && sourceInput !== DEFAULT_SOURCE)
+      next.set('source', sourceInput);
+    setSearchParams(next);
+  };
+
+  return (
+    <>
+      <PageHeader
+        title="Master texts"
+        description="Parsed federal master texts (XZuFi) — the fallback service description."
+      />
+      <form onSubmit={submit}>
+        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+          <TextField
+            label="Editorial office id"
+            size="small"
+            required
+            value={officeInput}
+            onChange={(event) => setOfficeInput(event.target.value)}
+          />
+          <TextField
+            label="Service id"
+            size="small"
+            required
+            value={serviceInput}
+            onChange={(event) => setServiceInput(event.target.value)}
+          />
+          <TextField
+            label="Source"
+            size="small"
+            value={sourceInput}
+            onChange={(event) => setSourceInput(event.target.value)}
+            helperText={`Default: ${DEFAULT_SOURCE}`}
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            Load
+          </Button>
+        </Stack>
+      </form>
+      <ValidationErrorAlert error={masterTextQuery.error} />
+      <QueryStateGate
+        query={masterTextQuery}
+        idleMessage="Provide an editorial office id and a service id."
+        renderNotFound={() => (
+          <Alert severity="info">No master text for this pair.</Alert>
+        )}
+      >
+        {(masterText) => (
+          <JsonViewer data={masterText} title="Master text" defaultExpanded />
+        )}
+      </QueryStateGate>
+    </>
+  );
+}

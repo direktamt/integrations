@@ -1,0 +1,24 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local environment files; the committed templates are the only exception
+.env
+.env.*
+!.env.example
+
+# Local overrides and tool state
+*.local
+.husky/_/
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log

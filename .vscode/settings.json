@@ -1,0 +1,44 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "[typescript]": {
+    "editor.formatOnSave": false
+  },
+  "[javascript]": {
+    "editor.formatOnSave": false
+  },
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "eslint.validate": ["javascript", "typescript"],
+  "files.insertFinalNewline": true,
+  "cSpell.words": [
+    "Ansprechpunkt",
+    "Bearbeitungsdauer",
+    "Beschreibung",
+    "Erforderliche",
+    "Formulare",
+    "Fristen",
+    "fuzzysearch",
+    "Gebühren",
+    "Informationen",
+    "Kosten",
+    "Kurzinfo",
+    "leika",
+    "Leistungsbezeichnung",
+    "Leistungsname",
+    "onlineservices",
+    "Rechtsbehelf",
+    "Rechtsgrundlage",
+    "servicedescriptions",
+    "Stelle",
+    "Unterlagen",
+    "Verfahrensablauf",
+    "Voraussetzungen",
+    "weiterführende",
+    "Zuständige"
+  ]
+}

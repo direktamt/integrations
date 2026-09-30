@@ -1,0 +1,83 @@
+import {
+  Autocomplete,
+  Card,
+  CardContent,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import { useSuggestLocations } from '../../api/queries/useLocationQueries';
+
+const DEBOUNCE_MS = 300;
+
+/**
+ * GET /locations/suggestions — debounced autocomplete over live
+ * suggestions with relevance scores.
+ */
+export function LocationSuggestPanel() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('suggestQuery') ?? '';
+  const [input, setInput] = useState(query);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+          if (input) {
+            next.set('suggestQuery', input);
+          } else {
+            next.delete('suggestQuery');
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [input, setSearchParams]);
+
+  const suggestionsQuery = useSuggestLocations(query);
+
+  return (
+    <Card variant="outlined">
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Suggest
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          GET /locations/suggestions — autocomplete for a partial city name or
+          postal code.
+        </Typography>
+        <Autocomplete
+          freeSolo
+          options={suggestionsQuery.data ?? []}
+          getOptionLabel={(option) =>
+            typeof option === 'string' ? option : option.name
+          }
+          filterOptions={(options) => options}
+          loading={suggestionsQuery.isFetching}
+          inputValue={input}
+          onInputChange={(_, newInput) => setInput(newInput)}
+          noOptionsText={query ? 'No suggestions.' : 'Type to get suggestions.'}
+          renderOption={(props, option) => (
+            <li {...props} key={`${option.name}-${option.relevance}`}>
+              <Stack>
+                <Typography variant="body2">{option.name}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  relevance {option.relevance}
+                </Typography>
+              </Stack>
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField {...params} label="Query" size="small" />
+          )}
+          sx={{ my: 1, maxWidth: 400 }}
+        />
+      </CardContent>
+    </Card>
+  );
+}

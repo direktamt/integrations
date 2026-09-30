@@ -1,0 +1,11 @@
+export type { CatalogEntry } from './CatalogEntry';
+export type { CatalogSearchResult } from './CatalogSearchResult';
+export type { Location } from './Location';
+export type { LocationSuggestion } from './LocationSuggestion';
+export type { OnlineService } from './OnlineService';
+export type { ParsedMasterText } from './ParsedMasterText';
+export type { PublicServiceDescription } from './PublicServiceDescription';
+export type { ServiceSearchResult } from './ServiceSearchResult';
+export type { ServiceSection } from './ServiceSection';
+export type { ServiceSectionLink } from './ServiceSectionLink';
+export { ServiceSectionType } from './ServiceSectionType';

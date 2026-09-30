@@ -1,0 +1,127 @@
+import type {
+  CatalogEntry,
+  CatalogSearchResult,
+  Location,
+  LocationSuggestion,
+  OnlineService,
+  ParsedMasterText,
+  PublicServiceDescription,
+  ServiceSearchResult,
+} from '@direktamt/integrations-contracts';
+import { Injectable } from '@nestjs/common';
+import { FimPortalClient } from './fim/FimPortalClient';
+import { PvogSearchClient } from './pvog/PvogSearchClient';
+import { ServiceSearchOptions } from './pvog/model/ServiceSearchOptions';
+
+/**
+ * Single entry point to external government data.
+ *
+ * Application code depends on this facade rather than individual upstream
+ * clients, allowing storage, caching or provider implementations to evolve
+ * without changing consumers.
+ */
+@Injectable()
+export class GovDataFacade {
+  constructor(
+    private readonly pvogSearchClient: PvogSearchClient,
+    private readonly fimPortalClient: FimPortalClient,
+  ) {}
+
+  /**
+   * Autocomplete for the city input field.
+   */
+  suggestLocations(query: string): Promise<LocationSuggestion[]> {
+    return this.pvogSearchClient.suggestLocations(query);
+  }
+
+  /**
+   * Resolve a city name or postal code to territories (regional keys).
+   */
+  resolveLocation(criteria: {
+    cityName?: string;
+    postalCode?: string;
+  }): Promise<Location[]> {
+    return this.pvogSearchClient.resolveLocation(criteria);
+  }
+
+  /**
+   * Reverse lookup: regional key (ARS) → territory data. Null when unknown.
+   */
+  getLocation(regionalKey: string): Promise<Location | null> {
+    return this.pvogSearchClient.getLocation(regionalKey);
+  }
+
+  /**
+   * Canonical detail view of one service description (e.g. for a deep link).
+   */
+  getServiceDescription(
+    id: string,
+    regionalKey: string,
+    useRegionalHierarchy: boolean,
+  ): Promise<PublicServiceDescription> {
+    return this.pvogSearchClient.getServiceDescription(
+      id,
+      regionalKey,
+      useRegionalHierarchy,
+    );
+  }
+
+  /**
+   * Plain-language search for public services within a territory: accepts a
+   * query plus a resolved regional key and returns matching services with all
+   * description sections.
+   */
+  searchServices(
+    regionalKey: string,
+    query: string,
+    options: ServiceSearchOptions,
+  ): Promise<ServiceSearchResult> {
+    return this.pvogSearchClient.searchServices(regionalKey, query, options);
+  }
+
+  /**
+   * Direct online-application links for a territory, optionally per service.
+   */
+  listOnlineServices(
+    regionalKey: string,
+    serviceCatalogKeys?: string[],
+  ): Promise<OnlineService[]> {
+    return this.pvogSearchClient.listOnlineServices(
+      regionalKey,
+      serviceCatalogKeys,
+    );
+  }
+
+  /**
+   * Search the federal service catalog (canonical service IDs + synonyms).
+   */
+  searchCatalog(
+    term: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<CatalogSearchResult> {
+    return this.fimPortalClient.searchCatalog(term, limit, offset);
+  }
+
+  /**
+   * Single federal catalog entry by its service catalog key (LeiKa key).
+   */
+  getCatalogEntry(serviceCatalogKey: string): Promise<CatalogEntry> {
+    return this.fimPortalClient.getCatalogEntry(serviceCatalogKey);
+  }
+
+  /**
+   * Federal master text (parsed XZuFi); fallback when no local description exists.
+   */
+  getParsedMasterText(
+    editorialOfficeId: string,
+    serviceId: string,
+    source?: string,
+  ): Promise<ParsedMasterText> {
+    return this.fimPortalClient.getParsedMasterText(
+      editorialOfficeId,
+      serviceId,
+      source,
+    );
+  }
+}

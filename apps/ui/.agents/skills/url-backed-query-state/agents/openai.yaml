@@ -1,0 +1,4 @@
+interface:
+  display_name: 'URL-backed Query State'
+  short_description: 'Keep inspector filters and selections in the URL'
+  default_prompt: 'Use $url-backed-query-state to make this inspector view refresh-safe and deep-linkable.'

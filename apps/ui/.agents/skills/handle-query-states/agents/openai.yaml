@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Handle Query States'
+  short_description: 'Apply consistent loading and API error surfaces'
+  default_prompt: 'Use $handle-query-states to add consistent loading, empty, validation, and error states to this query.'

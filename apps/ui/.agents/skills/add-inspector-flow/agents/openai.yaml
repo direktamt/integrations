@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Add Inspector Flow'
+  short_description: 'Wire an API endpoint through the inspector UI'
+  default_prompt: 'Use $add-inspector-flow to expose this integrations API endpoint in the inspector UI.'
