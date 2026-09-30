@@ -59,30 +59,29 @@ npm run lint --workspace @direktamt/integrations-api
 4. **Read-method verbs encode semantics** (same verb through the whole
    controller → facade → client chain, no verb jumping between layers):
 
-   | Verb                                                                             | Semantics                                                | Example              |
-   | -------------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------- |
-   | `get*`                                                                           | single entity by identity/key; absence is exceptional    | `getCatalogEntry`    |
-   | `list*`                                                                          | enumerate everything under a key; empty result is normal | `listOnlineServices` |
-   | `search*`                                                                        | full-text/ranked search over a query string              | `searchServices`     |
-   | `suggest*`                                                                       | autocomplete: ranked suggestions for a partial input     | `suggestLocations`   |
-   | `resolve*`                                                                       | map user input to canonical identifiers                  | `resolveLocation`    |
-   | Do NOT use a blanket `get*` for remote lookups and searches, and do not          |
-   | introduce `find*` — its niche is covered by `resolve*`/`list*` here.             |
-   | The noun's number follows the OPERATION's semantics, not the return              |
-   | type's cardinality: `resolveLocation` takes one location reference and           |
-   | returns candidate matches (like DNS "resolve a hostname"), while                 |
-   | `suggestLocations` is inherently plural. The same entity keeps the same          |
-   | name across all layers — no `Catalog` in one layer and `ServiceCatalog`          |
-   | in another.                                                                      |
-   | Controllers use the bare verb (`LocationController.suggest`) since the           |
-   | class name carries the noun; facade and clients keep verb+noun                   |
-   | (`suggestLocations`). URL paths stay resource-nouns, never verbs                 |
-   | (`GET /locations/suggestions`, not `/locations/suggest`).                        |
-   | Request DTOs in `api/request/` are reified operations and mirror the             |
-   | method verb-first (`SearchCatalogQuery` ↔ `searchCatalog`); domain/result        |
-   | models are entities and stay noun phrases (`CatalogSearchResult`) — this         |
-   | asymmetry is intentional.                                                        |
-   | See `../../docs/decisions/0006-read-method-verb-semantics.md` for the rationale. |
+   | Verb                                                                      | Semantics                                                | Example              |
+   | ------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------- |
+   | `get*`                                                                    | single entity by identity/key; absence is exceptional    | `getCatalogEntry`    |
+   | `list*`                                                                   | enumerate everything under a key; empty result is normal | `listOnlineServices` |
+   | `search*`                                                                 | full-text/ranked search over a query string              | `searchServices`     |
+   | `suggest*`                                                                | autocomplete: ranked suggestions for a partial input     | `suggestLocations`   |
+   | `resolve*`                                                                | map user input to canonical identifiers                  | `resolveLocation`    |
+   | Do NOT use a blanket `get*` for remote lookups and searches, and do not   |
+   | introduce `find*` — its niche is covered by `resolve*`/`list*` here.      |
+   | The noun's number follows the OPERATION's semantics, not the return       |
+   | type's cardinality: `resolveLocation` takes one location reference and    |
+   | returns candidate matches (like DNS "resolve a hostname"), while          |
+   | `suggestLocations` is inherently plural. The same entity keeps the same   |
+   | name across all layers — no `Catalog` in one layer and `ServiceCatalog`   |
+   | in another.                                                               |
+   | Controllers use the bare verb (`LocationController.suggest`) since the    |
+   | class name carries the noun; facade and clients keep verb+noun            |
+   | (`suggestLocations`). URL paths stay resource-nouns, never verbs          |
+   | (`GET /locations/suggestions`, not `/locations/suggest`).                 |
+   | Request DTOs in `api/request/` are reified operations and mirror the      |
+   | method verb-first (`SearchCatalogQuery` ↔ `searchCatalog`); domain/result |
+   | models are entities and stay noun phrases (`CatalogSearchResult`) — this  |
+   | asymmetry is intentional.                                                 |
 
 5. **External API reference.** `docs/INTEGRATIONS.md` is the source of truth
    for endpoints, parameters and verified response shapes. Update it when the

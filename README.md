@@ -67,8 +67,6 @@ integrations API (NestJS)
 Runtime integration requests are deterministic and do not depend on LLM
 calls.
 
-Architecture decisions are recorded in [`docs/decisions/`](docs/decisions/).
-
 ## Supported data sources
 
 | Source                 | Operator | Status                      | Used for                                                                                    |
@@ -107,7 +105,6 @@ The API serves an OpenAPI document and Swagger UI at `/docs`.
 | `apps/api/docs/`      | Handbook of the upstream APIs ([INTEGRATIONS.md](apps/api/docs/INTEGRATIONS.md))   |
 | `apps/ui/`            | React inspection console for the integrations API ([README](apps/ui/README.md))    |
 | `packages/contracts/` | Shared TypeScript response models (`@direktamt/integrations-contracts`)            |
-| `docs/decisions/`     | Architecture decision records                                                      |
 | `.agents/`            | Conventions and skills for coding agents working in this repository                |
 
 ## Quick start

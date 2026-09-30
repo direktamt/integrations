@@ -52,8 +52,8 @@ instructions: `apps/api/.agents/AGENTS.md`.
 
 7. **Integration scope only.** Add code only when it integrates, normalizes,
    verifies or inspects official upstream data. The deployable applications
-   remain `apps/api` and `apps/ui`; any additional deployable requires an ADR
-   demonstrating integration-domain ownership.
+   remain `apps/api` and `apps/ui`; any additional deployable requires an
+   explicit architecture decision demonstrating integration-domain ownership.
 
 ## Key documents
 
