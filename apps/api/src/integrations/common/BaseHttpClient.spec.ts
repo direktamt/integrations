@@ -404,8 +404,30 @@ describe('BaseHttpClient', () => {
         { cacheable: true },
       );
 
-      expect(second).toBe(first);
+      expect(second).toEqual(first);
+      expect(second).not.toBe(first);
       expect(fetchStub.calls).toHaveLength(1);
+    });
+
+    it('never hands out a reference held by the cache', async () => {
+      fetchStub.respondWithJson({ name: 'a', weight: 1, list: [1, 2, 3] });
+
+      const item = await cached.item('/thing', undefined, { cacheable: true });
+      item.name = 'changed';
+      const raw = await cached.raw<{ list: number[] }>('/thing', undefined, {
+        cacheable: true,
+      });
+      raw.list.push(4);
+
+      await expect(
+        cached.item('/thing', undefined, { cacheable: true }),
+      ).resolves.toEqual({ name: 'a', relevance: 1 });
+      await expect(
+        cached.raw<{ list: number[] }>('/thing', undefined, {
+          cacheable: true,
+        }),
+      ).resolves.toMatchObject({ list: [1, 2, 3] });
+      expect(fetchStub.calls).toHaveLength(2);
     });
 
     it('keys the cache by the full request, so other parameters miss', async () => {

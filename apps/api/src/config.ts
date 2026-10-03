@@ -80,13 +80,15 @@ export const CONFIG = {
       },
     },
     /**
-     * Process-local cache for key-based, rarely changing upstream reads.
+     * Opt-in process-local cache for key-based, rarely changing upstream
+     * reads. Off by default so that a request reflects the current upstream
+     * data unless a deployment chooses otherwise.
      */
     cache: {
       enabled: parseBooleanFlag(
         'INTEGRATIONS_CACHE_ENABLED',
         process.env.INTEGRATIONS_CACHE_ENABLED,
-        true,
+        false,
       ),
       maxEntries: Number(process.env.INTEGRATIONS_CACHE_MAX_ENTRIES ?? 1_000),
       ttlMs: Number(process.env.INTEGRATIONS_CACHE_TTL_MS ?? 300_000),

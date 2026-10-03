@@ -48,7 +48,7 @@ never touches `process.env` directly; always go through `CONFIG`.
 | `INTEGRATIONS_BREAKER_VOLUME_THRESHOLD`           | `5`                                     | Minimum calls within the rolling window before the circuit may open                                                                                              |
 | `INTEGRATIONS_BREAKER_ROLLING_WINDOW_MS`          | `10000`                                 | Length of the rolling statistics window                                                                                                                          |
 | `INTEGRATIONS_BREAKER_RESET_TIMEOUT_MS`           | `30000`                                 | How long an open circuit rejects calls before one probe call is let through                                                                                      |
-| `INTEGRATIONS_CACHE_ENABLED`                      | `true`                                  | Serve opted-in key-based reads (territory, catalog entry, master text, organisation unit) from the in-process cache                                              |
+| `INTEGRATIONS_CACHE_ENABLED`                      | `false`                                 | Opt-in: serve key-based reads (territory, catalog entry, master text, organisation unit) from the in-process cache for up to the TTL                             |
 | `INTEGRATIONS_CACHE_MAX_ENTRIES`                  | `1000`                                  | Upper bound of cached entries; least recently used evicted first                                                                                                 |
 | `INTEGRATIONS_CACHE_TTL_MS`                       | `300000`                                | Lifetime of a cached entry                                                                                                                                       |
 
@@ -231,17 +231,21 @@ which one is an outage):
   `INTEGRATIONS_BREAKER_RESET_TIMEOUT_MS`; then exactly one probe call is
   let through: its success closes the circuit, its failure reopens it.
 - **Cache** (lru-cache behind `IntegrationCache`,
-  `integrations/common/cache/`). Clients opt specific key-based, rarely
-  changing reads in: the territory lookup by regional key, the FIM catalog
-  entry and master text, and the organisation-unit detail behind every
-  authority. Searches, suggestions, service details and online-service
-  enumerations are never cached. Only a validated result is stored, for
-  `INTEGRATIONS_CACHE_TTL_MS`, in a bounded in-process LRU
+  `integrations/common/cache/`). Off by default: a request reflects the
+  current upstream data unless a deployment sets
+  `INTEGRATIONS_CACHE_ENABLED=true`. When enabled, clients opt specific
+  key-based, rarely changing reads in: the territory lookup by regional
+  key, the FIM catalog entry and master text, and the organisation-unit
+  detail behind every authority. Searches, suggestions, service details and
+  online-service enumerations are never cached. Only a validated result is
+  stored, for `INTEGRATIONS_CACHE_TTL_MS`, in a bounded in-process LRU
   (`INTEGRATIONS_CACHE_MAX_ENTRIES`); failures, 404s and contract
-  violations never reach the cache, and `INTEGRATIONS_CACHE_ENABLED=false`
-  binds a no-op cache. The interface is asynchronous so that a shared store
-  could replace the in-memory implementation without touching the clients;
-  there is no Redis, no negative caching and no background refresh.
+  violations never reach the cache. The cache keeps the validated JSON
+  payload, cloned on the way in and out, and every hit is parsed again, so
+  no consumer ever shares a reference with the cache. The interface is
+  asynchronous so that a shared store could replace the in-memory
+  implementation without touching the clients; there is no Redis, no
+  negative caching and no background refresh.
 
 Log lines carry provider, attempt, retry reason, breaker transitions and
 cache hit/miss next to the sanitized URL; query values, response bodies and

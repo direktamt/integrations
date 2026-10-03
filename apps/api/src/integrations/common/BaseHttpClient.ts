@@ -25,7 +25,9 @@ export interface UpstreamReadOptions {
    * store a fresh one for the configured TTL. Opt in only for key-based
    * reads of data that changes rarely (a territory, a catalog entry, an
    * organisation unit); never for searches or enumerations. Failures are
-   * never cached because only a validated result reaches the cache.
+   * never cached because only a validated result reaches the cache, and no
+   * consumer ever receives a reference held by the cache: the cache keeps
+   * the validated JSON payload and every hit is parsed again from a clone.
    */
   cacheable?: boolean;
 }
@@ -115,7 +117,9 @@ export abstract class BaseHttpClient {
   /**
    * Cache lookup, request through the executor, parsing, cache store. The
    * cache key holds the full request URL; it stays in memory and is never
-   * logged. `kind` separates the representations of one URL.
+   * logged. `kind` separates the representations of one URL. The cache
+   * stores the validated JSON payload, cloned on the way in and out, so
+   * that mutations by a consumer never reach it.
    */
   private async read<T>(
     kind: string,
@@ -131,20 +135,20 @@ export abstract class BaseHttpClient {
       : undefined;
 
     if (cacheKey !== undefined) {
-      const cached = await this.cache.get<T>(cacheKey);
+      const cached = await this.cache.get<unknown>(cacheKey);
 
       this.logger.debug(
         `Cache ${cached === undefined ? 'miss' : 'hit'} for ${this.provider}: ${url}`,
       );
 
-      if (cached !== undefined) return cached;
+      if (cached !== undefined) return parse(structuredClone(cached), url);
     }
 
     const payload = await this.fetchJson(requestUrl, url);
     const value = parse(payload, url);
 
     if (cacheKey !== undefined) {
-      await this.cache.set(cacheKey, value, this.cacheTtlMs);
+      await this.cache.set(cacheKey, structuredClone(payload), this.cacheTtlMs);
     }
 
     return value;
