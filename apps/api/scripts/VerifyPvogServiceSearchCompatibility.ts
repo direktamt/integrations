@@ -119,7 +119,7 @@ function compare(
   );
   const gap = [
     fromV7.summary !== undefined ? 'summary' : '',
-    fromV7.targetAudiences.length ? 'targetAudiences' : '',
+    fromV7.targetAudiences?.length ? 'targetAudiences' : '',
   ].filter(Boolean);
 
   if (gap.length) {

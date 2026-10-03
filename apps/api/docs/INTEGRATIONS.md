@@ -213,7 +213,8 @@ the federal states, `00` for federal descriptions), `addressees` (target
 audiences as published labels from the XZuFi Leistungsadressat code list —
 `Bürger`, `Unternehmen` in live data) and `availableLanguages` (ISO 639-1
 codes, `de` and `en` in live data); they are exposed as `federalStateKeys`,
-`targetAudiences` and `availableLanguages`. `addressees` is only set when
+`targetAudiences` and `availableLanguages`; the two optional ones are
+absent on endpoints that do not publish the field. `addressees` is only set when
 the authority classified the service (29 of 66 sampled items on
 2026-09-30). Fields this project does not consume (`teaser`,
 `onlineServiceLinks`, `sdgInformation`, `sourcePortals`, `synonyms`,
@@ -312,7 +313,7 @@ Differences to v7 and how the adapter absorbs them:
   content. Totals may differ from v7 for the same query (10 versus 8 for the
   reference query on 2026-09-30); ranking may differ as well.
 - `summary` and `targetAudiences` of the public contract come from the v7
-  search item only; on v8beta1 they are empty.
+  search item only; on v8beta1 they are absent.
 - The detail view publishes a different section set than the v7 search
   item: the v7 item renders the responsibilities as `Zuständige Stelle` and
   `Ansprechpunkt` sections and adds `Urheber`, sometimes `Fristen`, while
@@ -346,9 +347,9 @@ with their roles, consumed by 1.5 — and `forms`, `onlineServiceLinks`,
 `personalMatters` and validity data that this project does not consume.
 Unlike the search item, the detail object carries no `description`,
 `addressees` or `arsFederalstate` (verified against the OpenAPI schema and
-eight live responses on 2026-09-30), so `summary` is absent and
-`targetAudiences` and `federalStateKeys` are empty on
-`GET /services/{id}`. An unknown `lbid`, or a
+eight live responses on 2026-09-30), so `summary`,
+`targetAudiences` and `federalStateKeys` are absent on `GET /services/{id}`
+(undefined, not empty: the endpoint does not publish the fields). An unknown `lbid`, or a
 known `lbid` with an `ars` the description does not apply to, yields 404,
 which the integrations API passes on as 404.
 
@@ -979,6 +980,11 @@ checklist for coding agents.
   deprecation header, 404 for an unknown id) and implemented (1.7) for
   `GET /online-services/{id}/authorities`; role enumeration and sampled
   values recorded.
+- **2026-10-03** (contract): `federalStateKeys` and `targetAudiences` of
+  `PublicServiceDescription` are optional. They are absent when the
+  endpoint does not publish the field (detail endpoint, v8beta1 search) and
+  an empty list only when the authority published none; consumers no
+  longer read "none" where the source said nothing.
 - **2026-09-30** (responsible authorities): `/v5/organisationunits/detail`
   moved from the auxiliary list to implemented (1.5), requested by `q` only;
   `organisations[]` of the service detail (1.4) is now consumed. Code lists

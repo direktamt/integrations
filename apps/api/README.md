@@ -174,7 +174,7 @@ uses. Absorbed differences: the page totals sit in a separate `page`
 object; the search is always fuzzy and always evaluated at request time, so
 `fuzzySearch` and `validDate` have no effect; `summary` and
 `targetAudiences` are not published by v8beta1 or the detail endpoint and
-stay empty; the detail endpoint publishes a different section set than the
+stay absent; the detail endpoint publishes a different section set than the
 v7 search hit (see the handbook). `ServiceSearchCompatibility.spec.ts`
 maps equivalent v7 and v8beta1 fixtures and asserts the same normalized
 result; `npm run verify:pvog-service-search-compat` does the same against

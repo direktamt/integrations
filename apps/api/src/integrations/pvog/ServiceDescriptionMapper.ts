@@ -24,8 +24,8 @@ export function toServiceDescription(
     title: wire.title,
     summary: wire.summary,
     regionalKeys: wire.regionalKeys ?? [],
-    federalStateKeys: wire.federalStateKeys ?? [],
-    targetAudiences: wire.addressees ?? [],
+    federalStateKeys: wire.federalStateKeys,
+    targetAudiences: wire.addressees,
     availableLanguages: wire.availableLanguages ?? [],
     sections: (wire.sections ?? []).map((section) => toSection(section)),
   };

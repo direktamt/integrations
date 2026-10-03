@@ -31,7 +31,7 @@ import { WireV8ServiceSearchResponse } from './wire/WireV8ServiceSearchResponse'
  * page totals live in a separate `page` object; the search is always fuzzy
  * and always evaluated at request time, so `fuzzySearch` and `validDate`
  * have no effect; `summary` and `targetAudiences` are not delivered by
- * either v8beta1 or the detail endpoint and stay empty. Never selected by
+ * either v8beta1 or the detail endpoint and stay absent. Never selected by
  * default. Handbook: apps/api/docs/INTEGRATIONS.md, section 1.3.
  */
 @Injectable()
@@ -116,7 +116,7 @@ export class PvogV8BetaServiceSearchProvider
 
     return {
       ...detail.service,
-      federalStateKeys: hit.federalStateKeys ?? [],
+      federalStateKeys: hit.federalStateKeys,
       availableLanguages:
         hit.availableLanguages ?? detail.service.availableLanguages,
     };

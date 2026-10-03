@@ -254,11 +254,11 @@ describe('PvogSearchClient', () => {
       expect(service).toMatchObject({
         serviceCatalogKeys: [],
         regionalKeys: [],
-        federalStateKeys: [],
-        targetAudiences: [],
         availableLanguages: [],
         sections: [],
       });
+      expect(service.federalStateKeys).toBeUndefined();
+      expect(service.targetAudiences).toBeUndefined();
     });
 
     it('keeps every published federal state, target audience and language', async () => {

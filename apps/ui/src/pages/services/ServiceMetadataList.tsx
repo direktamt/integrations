@@ -15,7 +15,7 @@ interface ServiceMetadataListProps {
  * Compact publication metadata of a service description: target audiences,
  * available languages and federal states. A group without values is not
  * rendered; the search endpoint publishes all three, the detail endpoint
- * only the languages.
+ * only the languages (the other two are absent there).
  */
 export function ServiceMetadataList({
   service,
@@ -24,7 +24,7 @@ export function ServiceMetadataList({
   const groups: { title: string; chips: ReactNode[] }[] = [
     {
       title: 'Target audiences',
-      chips: service.targetAudiences.map((audience) => (
+      chips: (service.targetAudiences ?? []).map((audience) => (
         <Chip key={audience} label={audience} size="small" />
       )),
     },
@@ -36,7 +36,7 @@ export function ServiceMetadataList({
     },
     {
       title: 'Federal states',
-      chips: service.federalStateKeys.map((key) => (
+      chips: (service.federalStateKeys ?? []).map((key) => (
         <KeyChip key={key} value={key} />
       )),
     },

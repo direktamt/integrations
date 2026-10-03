@@ -127,7 +127,7 @@ function json(body: unknown, status = 200): Promise<Response> {
 function withDocumentedGaps(
   service: PublicServiceDescription,
 ): PublicServiceDescription {
-  return { ...service, summary: undefined, targetAudiences: [] };
+  return { ...service, summary: undefined, targetAudiences: undefined };
 }
 
 describe('service search compatibility v7 ↔ v8beta1', () => {
@@ -240,7 +240,10 @@ describe('service search compatibility v7 ↔ v8beta1', () => {
       undefined,
       undefined,
     ]);
-    expect(fromV8.services.map((s) => s.targetAudiences)).toEqual([[], []]);
+    expect(fromV8.services.map((s) => s.targetAudiences)).toEqual([
+      undefined,
+      undefined,
+    ]);
   });
 
   it('translates the shared options identically and drops what v8beta1 does not support', async () => {

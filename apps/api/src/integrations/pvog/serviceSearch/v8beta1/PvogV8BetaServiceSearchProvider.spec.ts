@@ -160,7 +160,7 @@ describe('PvogV8BetaServiceSearchProvider', () => {
       summary: undefined,
       regionalKeys: ['053150000000'],
       federalStateKeys: ['05'],
-      targetAudiences: [],
+      targetAudiences: undefined,
       availableLanguages: ['de', 'en'],
       sections: [
         {
