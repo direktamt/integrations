@@ -4,6 +4,7 @@ import {
 } from '@direktamt/integrations-contracts';
 import { Logger } from '@nestjs/common';
 import { FetchStub } from '../../test/FetchStub';
+import { testHttpClientDependencies } from '../../test/UpstreamTestSupport';
 import { UpstreamHttpException } from './common/exceptions/UpstreamHttpException';
 import { FimPortalClient } from './fim/FimPortalClient';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
@@ -106,9 +107,13 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
 
 describe('ServiceContextAssembler', () => {
   const fetchStub = new FetchStub();
-  const pvogSearchClient = new PvogSearchClient();
-  const pvogAuthorityClient = new PvogAuthorityClient();
-  const fimPortalClient = new FimPortalClient();
+  const pvogSearchClient = new PvogSearchClient(
+    ...testHttpClientDependencies(),
+  );
+  const pvogAuthorityClient = new PvogAuthorityClient(
+    ...testHttpClientDependencies(),
+  );
+  const fimPortalClient = new FimPortalClient(...testHttpClientDependencies());
   const assembler = new ServiceContextAssembler(
     pvogSearchClient,
     pvogAuthorityClient,

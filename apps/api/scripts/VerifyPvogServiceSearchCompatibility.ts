@@ -18,6 +18,9 @@
  */
 import 'reflect-metadata';
 import type { PublicServiceDescription } from '@direktamt/integrations-contracts';
+import { CONFIG } from '../src/config';
+import { NoopIntegrationCache } from '../src/integrations/common/cache/NoopIntegrationCache';
+import { UpstreamRequestExecutor } from '../src/integrations/common/resilience/UpstreamRequestExecutor';
 import { PvogSearchClient } from '../src/integrations/pvog/PvogSearchClient';
 import { ServiceSearchOptions } from '../src/integrations/pvog/model/ServiceSearchOptions';
 import { PvogV7ServiceSearchProvider } from '../src/integrations/pvog/serviceSearch/v7/PvogV7ServiceSearchProvider';
@@ -127,8 +130,14 @@ function compare(
 }
 
 async function main(): Promise<number> {
-  const v7 = new PvogV7ServiceSearchProvider();
-  const v8beta1 = new PvogV8BetaServiceSearchProvider(new PvogSearchClient());
+  const executor = new UpstreamRequestExecutor(CONFIG.integrations.resilience);
+  const cache = new NoopIntegrationCache();
+  const v7 = new PvogV7ServiceSearchProvider(executor, cache);
+  const v8beta1 = new PvogV8BetaServiceSearchProvider(
+    executor,
+    cache,
+    new PvogSearchClient(executor, cache),
+  );
   let failures = 0;
 
   for (const reference of REFERENCE_QUERIES) {

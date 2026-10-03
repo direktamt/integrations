@@ -116,6 +116,15 @@ adapters against the live APIs and reports the semantic differences. v7
 remains the production default until a separate decision changes it; the
 beta adapter comes with no stability promise.
 
+Transient upstream failures are absorbed inside the integration layer:
+idempotent requests are retried with backoff within one request budget
+(`INTEGRATIONS_HTTP_TIMEOUT_MS`), a circuit breaker per provider stops
+calling an upstream that keeps failing, and key-based lookups (territory,
+catalog entry, master text, organisation unit) are served from a bounded
+in-process cache with a short TTL. Public contracts and error responses do
+not change; see [`apps/api/README.md`](apps/api/README.md), Upstream
+resilience, for the policy and its configuration.
+
 ## Supported data sources
 
 | Source                 | Operator | Status                      | Used for                                                                                                                                |
@@ -209,15 +218,25 @@ cp apps/api/.env.example apps/api/.env
 cp apps/ui/.env.example apps/ui/.env
 ```
 
-| Variable                       | Default                                 | Purpose                                                                                                                   |
-| ------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                         | `3000`                                  | HTTP port of the API                                                                                                      |
-| `CORS_ORIGINS`                 | `http://localhost:5173`                 | Comma-separated browser origins allowed to call the API                                                                   |
-| `PVOG_SEARCH_BASE_URL`         | `https://pvog.fitko.net/suchdienst/api` | PVOG Suchdienst base URL                                                                                                  |
-| `FIM_PORTAL_BASE_URL`          | `https://fimportal.de/api`              | FIM Portal base URL                                                                                                       |
-| `PVOG_SERVICE_SEARCH_VERSION`  | `v7`                                    | Upstream version of the PVOG service search behind `GET /services`: `v7` (production default) or `v8beta1` (experimental) |
-| `INTEGRATIONS_HTTP_TIMEOUT_MS` | `15000`                                 | Timeout for outbound upstream requests                                                                                    |
-| `VITE_API_BASE_URL`            | `http://localhost:3000`                 | API base URL used by the console (read at build time)                                                                     |
+| Variable                                          | Default                                 | Purpose                                                                                                                         |
+| ------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                                            | `3000`                                  | HTTP port of the API                                                                                                            |
+| `CORS_ORIGINS`                                    | `http://localhost:5173`                 | Comma-separated browser origins allowed to call the API                                                                         |
+| `PVOG_SEARCH_BASE_URL`                            | `https://pvog.fitko.net/suchdienst/api` | PVOG Suchdienst base URL                                                                                                        |
+| `FIM_PORTAL_BASE_URL`                             | `https://fimportal.de/api`              | FIM Portal base URL                                                                                                             |
+| `PVOG_SERVICE_SEARCH_VERSION`                     | `v7`                                    | Upstream version of the PVOG service search behind `GET /services`: `v7` (production default) or `v8beta1` (experimental)       |
+| `INTEGRATIONS_HTTP_TIMEOUT_MS`                    | `15000`                                 | Budget of one outbound upstream request including retries and the waits between them; the request is aborted at the deadline    |
+| `INTEGRATIONS_HTTP_MAX_RETRIES`                   | `2`                                     | Retries after the initial attempt for network failures and HTTP 429/502/503/504; `0` disables retrying                          |
+| `INTEGRATIONS_HTTP_RETRY_BASE_DELAY_MS`           | `200`                                   | First backoff delay; later delays grow exponentially with jitter                                                                |
+| `INTEGRATIONS_HTTP_RETRY_MAX_DELAY_MS`            | `2000`                                  | Upper bound of a backoff delay; a valid `Retry-After` on 429/503 replaces the computed delay                                    |
+| `INTEGRATIONS_BREAKER_ERROR_THRESHOLD_PERCENTAGE` | `50`                                    | Share of availability failures (network failure, timeout, 5xx) within the rolling window above which a provider's circuit opens |
+| `INTEGRATIONS_BREAKER_VOLUME_THRESHOLD`           | `5`                                     | Minimum calls within the rolling window before the circuit may open                                                             |
+| `INTEGRATIONS_BREAKER_ROLLING_WINDOW_MS`          | `10000`                                 | Length of the rolling statistics window                                                                                         |
+| `INTEGRATIONS_BREAKER_RESET_TIMEOUT_MS`           | `30000`                                 | How long an open circuit rejects calls before one probe call is let through                                                     |
+| `INTEGRATIONS_CACHE_ENABLED`                      | `true`                                  | Serve opted-in key-based reads (territory, catalog entry, master text, organisation unit) from the in-process cache             |
+| `INTEGRATIONS_CACHE_MAX_ENTRIES`                  | `1000`                                  | Upper bound of cached entries; least recently used evicted first                                                                |
+| `INTEGRATIONS_CACHE_TTL_MS`                       | `300000`                                | Lifetime of a cached entry                                                                                                      |
+| `VITE_API_BASE_URL`                               | `http://localhost:3000`                 | API base URL used by the console (read at build time)                                                                           |
 
 No secrets are required: both upstream APIs are public and unauthenticated.
 

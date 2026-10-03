@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CONFIG } from '../../config';
+import { ResilienceModule } from '../common/resilience/ResilienceModule';
 import { PvogAuthorityClient } from './PvogAuthorityClient';
 import { PvogRawClient } from './PvogRawClient';
 import { PvogSearchClient } from './PvogSearchClient';
@@ -18,6 +19,7 @@ import { PvogV8BetaServiceSearchProvider } from './serviceSearch/v8beta1/PvogV8B
  * available, nothing selects one per request.
  */
 @Module({
+  imports: [ResilienceModule],
   providers: [
     PvogSearchClient,
     PvogAuthorityClient,

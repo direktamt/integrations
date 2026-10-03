@@ -3,6 +3,7 @@ import {
   ServiceSectionType,
 } from '@direktamt/integrations-contracts';
 import { FetchStub } from '../../../test/FetchStub';
+import { testHttpClientDependencies } from '../../../test/UpstreamTestSupport';
 import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
 import { PvogSearchClient } from './PvogSearchClient';
 
@@ -52,7 +53,7 @@ const SERVICE_DESCRIPTION = {
 
 describe('PvogSearchClient', () => {
   const fetchStub = new FetchStub();
-  const client = new PvogSearchClient();
+  const client = new PvogSearchClient(...testHttpClientDependencies());
 
   beforeAll(() => {
     fetchStub.install();

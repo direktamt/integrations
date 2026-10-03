@@ -2,12 +2,18 @@ import type {
   PublicServiceDescription,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CONFIG } from '../../../../config';
 import { BaseHttpClient } from '../../../common/BaseHttpClient';
+import {
+  INTEGRATION_CACHE,
+  type IntegrationCache,
+} from '../../../common/cache/IntegrationCache';
+import { UpstreamProvider } from '../../../common/UpstreamProvider';
 import { mapConcurrently } from '../../../common/Concurrency';
 import { UpstreamContractViolationException } from '../../../common/exceptions/UpstreamContractViolationException';
 import { UpstreamHttpException } from '../../../common/exceptions/UpstreamHttpException';
+import { UpstreamRequestExecutor } from '../../../common/resilience/UpstreamRequestExecutor';
 import { ServiceDescriptionDetail } from '../../model/ServiceDescriptionDetail';
 import { ServiceSearchOptions } from '../../model/ServiceSearchOptions';
 import { PvogSearchClient } from '../../PvogSearchClient';
@@ -34,13 +40,18 @@ export class PvogV8BetaServiceSearchProvider
   implements ServiceSearchProvider
 {
   protected readonly baseUrl = CONFIG.integrations.pvogSearchBaseUrl;
+  protected readonly provider: UpstreamProvider = 'PVOG';
 
   private static readonly SEARCH_PATH = '/v8beta1/servicedescriptions';
 
   private static readonly DETAIL_CONCURRENCY = 8;
 
-  constructor(private readonly pvogSearchClient: PvogSearchClient) {
-    super();
+  constructor(
+    executor: UpstreamRequestExecutor,
+    @Inject(INTEGRATION_CACHE) cache: IntegrationCache,
+    private readonly pvogSearchClient: PvogSearchClient,
+  ) {
+    super(executor, cache);
   }
 
   async searchServices(

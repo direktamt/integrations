@@ -6,6 +6,7 @@ import type {
 import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../config';
 import { BaseHttpClient } from '../common/BaseHttpClient';
+import { UpstreamProvider } from '../common/UpstreamProvider';
 import { WireCatalogEntry } from './wire/WireCatalogEntry';
 import { WireCatalogSearchResponse } from './wire/WireCatalogSearchResponse';
 
@@ -17,6 +18,7 @@ import { WireCatalogSearchResponse } from './wire/WireCatalogSearchResponse';
 @Injectable()
 export class FimPortalClient extends BaseHttpClient {
   protected readonly baseUrl = CONFIG.integrations.fimPortalBaseUrl;
+  protected readonly provider: UpstreamProvider = 'FIM';
 
   /**
    * Full-text search over the federal service catalog (LeiKa). The upstream
@@ -52,6 +54,8 @@ export class FimPortalClient extends BaseHttpClient {
     const wire = await this.getModel(
       WireCatalogEntry,
       `/v0/leistung-steckbriefe/${encodeURIComponent(serviceCatalogKey)}`,
+      undefined,
+      { cacheable: true },
     );
     return this.toCatalogEntry(wire);
   }
@@ -70,6 +74,8 @@ export class FimPortalClient extends BaseHttpClient {
       `/v0/leistung-stammtexte/${encodeURIComponent(editorialOfficeId)}/${encodeURIComponent(
         serviceId,
       )}/${encodeURIComponent(source)}/parsed-xzufi`,
+      undefined,
+      { cacheable: true },
     );
   }
 

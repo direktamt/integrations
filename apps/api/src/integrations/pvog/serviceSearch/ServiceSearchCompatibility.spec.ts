@@ -1,5 +1,6 @@
 import type { PublicServiceDescription } from '@direktamt/integrations-contracts';
 import { FetchStub } from '../../../../test/FetchStub';
+import { testHttpClientDependencies } from '../../../../test/UpstreamTestSupport';
 import { PvogSearchClient } from '../PvogSearchClient';
 import { PvogV7ServiceSearchProvider } from './v7/PvogV7ServiceSearchProvider';
 import { PvogV8BetaServiceSearchProvider } from './v8beta1/PvogV8BetaServiceSearchProvider';
@@ -131,8 +132,11 @@ function withDocumentedGaps(
 
 describe('service search compatibility v7 ↔ v8beta1', () => {
   const fetchStub = new FetchStub();
-  const v7 = new PvogV7ServiceSearchProvider();
-  const v8beta1 = new PvogV8BetaServiceSearchProvider(new PvogSearchClient());
+  const v7 = new PvogV7ServiceSearchProvider(...testHttpClientDependencies());
+  const v8beta1 = new PvogV8BetaServiceSearchProvider(
+    ...testHttpClientDependencies(),
+    new PvogSearchClient(...testHttpClientDependencies()),
+  );
   const options = {
     size: 10,
     page: 0,

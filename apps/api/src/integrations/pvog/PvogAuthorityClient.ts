@@ -9,6 +9,7 @@ import {
 import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../config';
 import { BaseHttpClient } from '../common/BaseHttpClient';
+import { UpstreamProvider } from '../common/UpstreamProvider';
 import { mapConcurrently } from '../common/Concurrency';
 import { nonEmpty } from '../common/OptionalText';
 import { AuthorityReference } from './model/AuthorityReference';
@@ -29,6 +30,7 @@ import { WireOnlineServiceAuthority } from './wire/WireOnlineServiceAuthority';
 @Injectable()
 export class PvogAuthorityClient extends BaseHttpClient {
   protected readonly baseUrl = CONFIG.integrations.pvogSearchBaseUrl;
+  protected readonly provider: UpstreamProvider = 'PVOG';
 
   /**
    * Upper bound on organisation-unit detail requests in flight for one
@@ -49,9 +51,12 @@ export class PvogAuthorityClient extends BaseHttpClient {
       references,
       PvogAuthorityClient.AUTHORITY_DETAIL_CONCURRENCY,
       (reference) =>
-        this.getModel(WireAuthority, '/v5/organisationunits/detail', {
-          q: reference.id,
-        }),
+        this.getModel(
+          WireAuthority,
+          '/v5/organisationunits/detail',
+          { q: reference.id },
+          { cacheable: true },
+        ),
     );
 
     return references.map((reference, index) =>

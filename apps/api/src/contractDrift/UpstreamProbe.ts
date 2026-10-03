@@ -1,6 +1,8 @@
 import type { ClassConstructor } from 'class-transformer';
 
-export type UpstreamProvider = 'PVOG' | 'FIM';
+import type { UpstreamProvider } from '../integrations/common/UpstreamProvider';
+
+export type { UpstreamProvider };
 
 export enum ProbeKind {
   /**

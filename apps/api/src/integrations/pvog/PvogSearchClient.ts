@@ -6,6 +6,7 @@ import type {
 import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../config';
 import { BaseHttpClient } from '../common/BaseHttpClient';
+import { UpstreamProvider } from '../common/UpstreamProvider';
 import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
 import { ServiceDescriptionDetail } from './model/ServiceDescriptionDetail';
 import {
@@ -28,6 +29,7 @@ import { WireServiceDescription } from './wire/WireServiceDescription';
 @Injectable()
 export class PvogSearchClient extends BaseHttpClient {
   protected readonly baseUrl = CONFIG.integrations.pvogSearchBaseUrl;
+  protected readonly provider: UpstreamProvider = 'PVOG';
 
   /**
    * Technical cap on location matches when the caller sets no limit; guards
@@ -86,6 +88,7 @@ export class PvogSearchClient extends BaseHttpClient {
       {
         ars: regionalKey,
       },
+      { cacheable: true },
     );
     return wire.length > 0 ? this.toLocation(wire[0]) : null;
   }

@@ -33,14 +33,24 @@ object) from the environment; in development, variables come from
 `apps/api/.env` (gitignored, template in `.env.example`). Application code
 never touches `process.env` directly; always go through `CONFIG`.
 
-| Env var                        | Default                                 | Purpose                                                                                                                                                          |
-| ------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                         | `3000`                                  | HTTP port                                                                                                                                                        |
-| `CORS_ORIGINS`                 | `http://localhost:5173`                 | Comma-separated browser origins allowed to call the API                                                                                                          |
-| `PVOG_SEARCH_BASE_URL`         | `https://pvog.fitko.net/suchdienst/api` | PVOG Suchdienst base URL                                                                                                                                         |
-| `FIM_PORTAL_BASE_URL`          | `https://fimportal.de/api`              | FIM Portal base URL                                                                                                                                              |
-| `PVOG_SERVICE_SEARCH_VERSION`  | `v7`                                    | Upstream version of the PVOG service search behind `GET /services`: `v7` (production default) or `v8beta1` (experimental adapter); any other value stops startup |
-| `INTEGRATIONS_HTTP_TIMEOUT_MS` | `15000`                                 | Timeout for outbound requests to the upstream APIs                                                                                                               |
+| Env var                                           | Default                                 | Purpose                                                                                                                                                          |
+| ------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                                            | `3000`                                  | HTTP port                                                                                                                                                        |
+| `CORS_ORIGINS`                                    | `http://localhost:5173`                 | Comma-separated browser origins allowed to call the API                                                                                                          |
+| `PVOG_SEARCH_BASE_URL`                            | `https://pvog.fitko.net/suchdienst/api` | PVOG Suchdienst base URL                                                                                                                                         |
+| `FIM_PORTAL_BASE_URL`                             | `https://fimportal.de/api`              | FIM Portal base URL                                                                                                                                              |
+| `PVOG_SERVICE_SEARCH_VERSION`                     | `v7`                                    | Upstream version of the PVOG service search behind `GET /services`: `v7` (production default) or `v8beta1` (experimental adapter); any other value stops startup |
+| `INTEGRATIONS_HTTP_TIMEOUT_MS`                    | `15000`                                 | Budget of one outbound upstream request including retries and the waits between them; the request is aborted at the deadline                                     |
+| `INTEGRATIONS_HTTP_MAX_RETRIES`                   | `2`                                     | Retries after the initial attempt for network failures and HTTP 429/502/503/504; `0` disables retrying                                                           |
+| `INTEGRATIONS_HTTP_RETRY_BASE_DELAY_MS`           | `200`                                   | First backoff delay; later delays grow exponentially with jitter                                                                                                 |
+| `INTEGRATIONS_HTTP_RETRY_MAX_DELAY_MS`            | `2000`                                  | Upper bound of a backoff delay; a valid `Retry-After` on 429/503 replaces the computed delay                                                                     |
+| `INTEGRATIONS_BREAKER_ERROR_THRESHOLD_PERCENTAGE` | `50`                                    | Share of availability failures (network failure, timeout, 5xx) within the rolling window above which a provider's circuit opens                                  |
+| `INTEGRATIONS_BREAKER_VOLUME_THRESHOLD`           | `5`                                     | Minimum calls within the rolling window before the circuit may open                                                                                              |
+| `INTEGRATIONS_BREAKER_ROLLING_WINDOW_MS`          | `10000`                                 | Length of the rolling statistics window                                                                                                                          |
+| `INTEGRATIONS_BREAKER_RESET_TIMEOUT_MS`           | `30000`                                 | How long an open circuit rejects calls before one probe call is let through                                                                                      |
+| `INTEGRATIONS_CACHE_ENABLED`                      | `true`                                  | Serve opted-in key-based reads (territory, catalog entry, master text, organisation unit) from the in-process cache                                              |
+| `INTEGRATIONS_CACHE_MAX_ENTRIES`                  | `1000`                                  | Upper bound of cached entries; least recently used evicted first                                                                                                 |
+| `INTEGRATIONS_CACHE_TTL_MS`                       | `300000`                                | Lifetime of a cached entry                                                                                                                                       |
 
 ## Source layout
 
@@ -61,7 +71,9 @@ src/
     IntegrationsModule.ts
     GovDataFacade.ts                 # the ONLY integration entry point for app code
     ServiceContextAssembler.ts       # composes GET /services/{id}/context from PVOG and FIM
-    common/BaseHttpClient.ts         # fetch + timeout + wire validation + typed upstream exceptions
+    common/BaseHttpClient.ts         # fetch + wire validation + typed upstream exceptions, via the executor
+    common/resilience/               # UpstreamRequestExecutor: cockatiel timeout + retry around one opossum breaker per provider
+    common/cache/                    # IntegrationCache interface, lru-cache and no-op implementations
     common/UrlSanitizer.ts           # strips query values from URLs before they reach logs
     common/exceptions/               # IntegrationException hierarchy
     pvog/                            # PVOG Suchdienst adapter
@@ -81,6 +93,7 @@ src/
       wire/                          # validated upstream JSON contracts
 test/
   FetchStub.ts                       # fetch stand-in for unit tests
+  UpstreamTestSupport.ts             # executor and cache for client specs (no retries, no cache)
 scripts/
   VerifyUpstreamContracts.ts         # npm run verify:contracts (weekly workflow, manual runs)
   VerifyPvogServiceSearchCompatibility.ts  # npm run verify:pvog-service-search-compat
@@ -181,6 +194,60 @@ caller-controlled. Validation is limited to what `BaseHttpClient` always
 does: a non-2xx status or a body that is not JSON becomes an upstream
 exception (404 → 404, other statuses → 502, unparseable body → 502).
 
+## Upstream resilience
+
+Every upstream request runs through `UpstreamRequestExecutor`
+(`integrations/common/resilience/`), one instance shared by all clients, so
+that resilience state belongs to the provider and not to a single endpoint.
+The executor composes two libraries, `timeout(budget) → retry → breaker →
+attempt`, and adds only the domain decisions (which failure is transient,
+which one is an outage):
+
+- **Request budget** (cockatiel `timeout`). `INTEGRATIONS_HTTP_TIMEOUT_MS`
+  is the overall budget of one upstream request (one page, one detail call)
+  including retries and the waits between them; it is not a per-attempt
+  timeout. At the deadline the request is aborted whatever it is doing, a
+  hanging attempt or a backoff wait, and surfaces as
+  `UpstreamTimeoutException` (504). A `Retry-After` that does not fit into
+  the remaining budget ends the request with the upstream error at once.
+- **Retry** (cockatiel `retry`). Upstream calls are idempotent GETs and are
+  retried after network failures and HTTP 429/502/503/504: the initial
+  attempt plus `INTEGRATIONS_HTTP_MAX_RETRIES` retries (default 2) with
+  exponential backoff and jitter between
+  `INTEGRATIONS_HTTP_RETRY_BASE_DELAY_MS` and
+  `INTEGRATIONS_HTTP_RETRY_MAX_DELAY_MS`; a valid `Retry-After` header on
+  429/503 replaces the computed delay. 4xx answers, other 5xx, timeouts,
+  contract violations and unparseable bodies are never retried.
+- **Circuit breaker** (opossum). One breaker per provider (PVOG, FIM), never
+  per endpoint. Only availability failures count — network failures,
+  timeouts and 5xx — through opossum's `errorFilter`; 4xx answers (including
+  404 and 429) and contract violations do not, a contract violation is drift
+  and not an outage. The circuit opens when, within
+  `INTEGRATIONS_BREAKER_ROLLING_WINDOW_MS`, at least
+  `INTEGRATIONS_BREAKER_VOLUME_THRESHOLD` calls were made and more than
+  `INTEGRATIONS_BREAKER_ERROR_THRESHOLD_PERCENTAGE` of them failed; every
+  attempt of a retried request counts. While open, calls are rejected
+  without reaching the upstream (`UpstreamCircuitOpenException`, 502) for
+  `INTEGRATIONS_BREAKER_RESET_TIMEOUT_MS`; then exactly one probe call is
+  let through: its success closes the circuit, its failure reopens it.
+- **Cache** (lru-cache behind `IntegrationCache`,
+  `integrations/common/cache/`). Clients opt specific key-based, rarely
+  changing reads in: the territory lookup by regional key, the FIM catalog
+  entry and master text, and the organisation-unit detail behind every
+  authority. Searches, suggestions, service details and online-service
+  enumerations are never cached. Only a validated result is stored, for
+  `INTEGRATIONS_CACHE_TTL_MS`, in a bounded in-process LRU
+  (`INTEGRATIONS_CACHE_MAX_ENTRIES`); failures, 404s and contract
+  violations never reach the cache, and `INTEGRATIONS_CACHE_ENABLED=false`
+  binds a no-op cache. The interface is asynchronous so that a shared store
+  could replace the in-memory implementation without touching the clients;
+  there is no Redis, no negative caching and no background refresh.
+
+Log lines carry provider, attempt, retry reason, breaker transitions and
+cache hit/miss next to the sanitized URL; query values, response bodies and
+cache keys are never logged. Consumers only see the generic error responses
+of the table below, never breaker state or attempt counts.
+
 ## Request validation
 
 Query DTOs in `api/request/` validate the documented upstream limits locally
@@ -192,15 +259,16 @@ indicate a contract problem rather than user input.
 
 ## Exception handling
 
-`BaseHttpClient` converts every failure into a typed `IntegrationException`:
+`BaseHttpClient` and the request executor convert every failure into a typed `IntegrationException`:
 
-| Exception                            | Raised when                                       | HTTP status returned |
-| ------------------------------------ | ------------------------------------------------- | -------------------- |
-| `UpstreamHttpException` (status 404) | the upstream answered 404                         | 404                  |
-| `UpstreamHttpException` (other)      | the upstream answered another non-2xx status      | 502                  |
-| `UpstreamNetworkException`           | no response at all (DNS, connection, TLS)         | 502                  |
-| `UpstreamContractViolationException` | a 2xx body did not match the wire model           | 502                  |
-| `UpstreamTimeoutException`           | no response within `INTEGRATIONS_HTTP_TIMEOUT_MS` | 504                  |
+| Exception                            | Raised when                                                                                   | HTTP status returned |
+| ------------------------------------ | --------------------------------------------------------------------------------------------- | -------------------- |
+| `UpstreamHttpException` (status 404) | the upstream answered 404                                                                     | 404                  |
+| `UpstreamHttpException` (other)      | the upstream answered another non-2xx status                                                  | 502                  |
+| `UpstreamNetworkException`           | no response at all (DNS, connection, TLS)                                                     | 502                  |
+| `UpstreamContractViolationException` | a 2xx body did not match the wire model                                                       | 502                  |
+| `UpstreamTimeoutException`           | no response within `INTEGRATIONS_HTTP_TIMEOUT_MS`                                             | 504                  |
+| `UpstreamCircuitOpenException`       | the provider's circuit is open after repeated availability failures; the request was not sent | 502                  |
 
 `UpstreamExceptionFilter` maps them to generic error bodies; upstream URLs
 and response bodies are never returned to the client. Logs and exception
@@ -212,7 +280,10 @@ values such as search terms, postal codes or regional keys are never logged.
 `npm run test --workspace @direktamt/integrations-api` runs Jest unit tests
 against a stubbed `fetch` (`test/FetchStub.ts`); they never reach the
 network. The tests cover `BaseHttpClient` (query building, parsing,
-validation, error mapping, timeout), the PVOG and FIM mapping code including
+validation, error mapping, request budget, retries over HTTP, cache opt-in and
+log hygiene), the failure classification, `Retry-After` parsing and backoff, the
+request executor (retry, budget, breaker transitions, provider isolation),
+the bounded cache (TTL, LRU eviction), the PVOG and FIM mapping code including
 online-service pagination with small synthetic fixtures, the service-to-authorities composition in `GovDataFacade`, the online-service → authorities composition (de-duplication, concurrency cap), the context assembly (identifier following, de-duplication, parallelism and the partial-failure status) in `ServiceContextAssembler`, the concurrency helper, the raw JZuFi pass-through (envelope, unchanged body, path encoding, error mapping, log hygiene), both service-search adapters and their semantic compatibility on equivalent fixtures, the version parsing and adapter selection, the request DTO limits, and the status mapping of
 `UpstreamExceptionFilter`.
 

@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { FetchStub } from '../../../test/FetchStub';
+import { testHttpClientDependencies } from '../../../test/UpstreamTestSupport';
 import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
 import { UpstreamHttpException } from '../common/exceptions/UpstreamHttpException';
 import { PvogRawClient } from './PvogRawClient';
@@ -27,7 +28,7 @@ const JZUFI_SERVICE = {
 
 describe('PvogRawClient', () => {
   const fetchStub = new FetchStub();
-  const client = new PvogRawClient();
+  const client = new PvogRawClient(...testHttpClientDependencies());
   let warnSpy: jest.SpyInstance;
   let errorSpy: jest.SpyInstance;
 

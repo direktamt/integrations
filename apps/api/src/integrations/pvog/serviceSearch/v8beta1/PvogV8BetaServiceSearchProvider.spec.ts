@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { FetchStub } from '../../../../../test/FetchStub';
+import { testHttpClientDependencies } from '../../../../../test/UpstreamTestSupport';
 import { UpstreamContractViolationException } from '../../../common/exceptions/UpstreamContractViolationException';
 import { UpstreamHttpException } from '../../../common/exceptions/UpstreamHttpException';
 import { PvogSearchClient } from '../../PvogSearchClient';
@@ -74,7 +75,10 @@ const OPTIONS = {
 
 describe('PvogV8BetaServiceSearchProvider', () => {
   const fetchStub = new FetchStub();
-  const provider = new PvogV8BetaServiceSearchProvider(new PvogSearchClient());
+  const provider = new PvogV8BetaServiceSearchProvider(
+    ...testHttpClientDependencies(),
+    new PvogSearchClient(...testHttpClientDependencies()),
+  );
 
   function serve(searchBody: unknown, detailsById: Record<string, unknown>) {
     fetchStub.respondWith((url) => {

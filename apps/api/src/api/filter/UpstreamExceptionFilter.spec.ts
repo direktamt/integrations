@@ -1,4 +1,5 @@
 import { ArgumentsHost, Logger } from '@nestjs/common';
+import { UpstreamCircuitOpenException } from '../../integrations/common/exceptions/UpstreamCircuitOpenException';
 import { UpstreamContractViolationException } from '../../integrations/common/exceptions/UpstreamContractViolationException';
 import { UpstreamHttpException } from '../../integrations/common/exceptions/UpstreamHttpException';
 import { UpstreamNetworkException } from '../../integrations/common/exceptions/UpstreamNetworkException';
@@ -77,6 +78,7 @@ describe('UpstreamExceptionFilter', () => {
       'contract violation',
       new UpstreamContractViolationException(URL, ['name: must be a string']),
     ],
+    ['open circuit', new UpstreamCircuitOpenException(URL, 'PVOG')],
   ])('maps a %s to 502', (_label, exception) => {
     expect(run(exception).status).toBe(502);
   });

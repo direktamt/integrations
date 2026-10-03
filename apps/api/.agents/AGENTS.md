@@ -76,8 +76,22 @@ npm run lint --workspace @direktamt/integrations-api
      interface/enum per file;
      integration-only inputs may stay in the integration's `model/` folder.
      No `*Models.ts` / `*Types.ts` aggregate files.
-   - All HTTP goes through `BaseHttpClient` (timeout, typed errors). Do not
+   - All HTTP goes through `BaseHttpClient` and its `UpstreamRequestExecutor`
+     (`common/resilience/`): cockatiel `timeout` (request budget
+     `INTEGRATIONS_HTTP_TIMEOUT_MS` covering all attempts) and `retry`
+     (network failures, HTTP 429/502/503/504, `Retry-After`) around one
+     opossum circuit breaker per provider. Resilience state lives in
+     `ResilienceModule`, never inside a client; never add a retry loop, a
+     timeout or a breaker to a client or a consumer, and never hand-write a
+     breaker, retry or cache — use the libraries. Only the failure
+     classification (`UpstreamFailureClassification`) is domain code. Do not
      add axios or other HTTP dependencies without discussion.
+   - Cache opt-in (`{ cacheable: true }` on `getModel`/`getRawJson`) is
+     reserved for key-based reads of rarely changing data (territory by
+     regional key, catalog entry, master text, organisation unit). Never
+     cache searches, suggestions or enumerations, never cache failures, and
+     never introduce a store other than `IntegrationCache` implementations
+     under `common/cache/` (lru-cache in process today).
 
 4. **Read-method verbs encode semantics** (same verb through the whole
    controller → facade → client chain, no verb jumping between layers):
@@ -120,6 +134,11 @@ npm run lint --workspace @direktamt/integrations-api
 
 8. **Tests.** Unit tests live next to the code as `*.spec.ts` and stub
    `fetch` through `test/FetchStub.ts`; they must never reach the network.
+   Clients under test take their executor and cache from
+   `test/UpstreamTestSupport.ts` (no retries, no cache, breaker effectively
+   off) so that failure cases stay single-call; resilience behaviour is
+   tested in `common/resilience/` and `common/cache/` and in
+   `BaseHttpClient.spec.ts`.
    Fixtures are small and synthetic. Live upstream checks exist only as
    `scripts/` entry points (`npm run verify:contracts`,
    `npm run verify:pvog-service-search-compat`) and the scheduled

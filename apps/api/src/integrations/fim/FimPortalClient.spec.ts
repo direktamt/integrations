@@ -1,4 +1,5 @@
 import { FetchStub } from '../../../test/FetchStub';
+import { testHttpClientDependencies } from '../../../test/UpstreamTestSupport';
 import { FimPortalClient } from './FimPortalClient';
 
 /**
@@ -39,7 +40,7 @@ const EXPECTED_ENTRY = {
 
 describe('FimPortalClient', () => {
   const fetchStub = new FetchStub();
-  const client = new FimPortalClient();
+  const client = new FimPortalClient(...testHttpClientDependencies());
 
   beforeAll(() => {
     fetchStub.install();

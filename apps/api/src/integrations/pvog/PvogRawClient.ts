@@ -5,6 +5,7 @@ import type {
 import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../config';
 import { BaseHttpClient } from '../common/BaseHttpClient';
+import { UpstreamProvider } from '../common/UpstreamProvider';
 
 /**
  * Adapter for the raw JZuFi resources of the public PVOG Suchdienst API:
@@ -19,6 +20,7 @@ import { BaseHttpClient } from '../common/BaseHttpClient';
 @Injectable()
 export class PvogRawClient extends BaseHttpClient {
   protected readonly baseUrl = CONFIG.integrations.pvogSearchBaseUrl;
+  protected readonly provider: UpstreamProvider = 'PVOG';
 
   /**
    * JZuFi 2.3 representation of one service description (Leistung).

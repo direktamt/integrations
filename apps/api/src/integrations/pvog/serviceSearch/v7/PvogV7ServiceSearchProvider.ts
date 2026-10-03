@@ -2,6 +2,7 @@ import type { ServiceSearchResult } from '@direktamt/integrations-contracts';
 import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../../../config';
 import { BaseHttpClient } from '../../../common/BaseHttpClient';
+import { UpstreamProvider } from '../../../common/UpstreamProvider';
 import { ServiceSearchOptions } from '../../model/ServiceSearchOptions';
 import { toServiceDescription } from '../../ServiceDescriptionMapper';
 import { ServiceSearchProvider } from '../ServiceSearchProvider';
@@ -18,6 +19,7 @@ export class PvogV7ServiceSearchProvider
   implements ServiceSearchProvider
 {
   protected readonly baseUrl = CONFIG.integrations.pvogSearchBaseUrl;
+  protected readonly provider: UpstreamProvider = 'PVOG';
 
   async searchServices(
     regionalKey: string,

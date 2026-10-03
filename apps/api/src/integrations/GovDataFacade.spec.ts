@@ -1,6 +1,7 @@
 import { AuthorityRole } from '@direktamt/integrations-contracts';
 import { Logger } from '@nestjs/common';
 import { FetchStub } from '../../test/FetchStub';
+import { testHttpClientDependencies } from '../../test/UpstreamTestSupport';
 import { UpstreamHttpException } from './common/exceptions/UpstreamHttpException';
 import { FimPortalClient } from './fim/FimPortalClient';
 import { GovDataFacade } from './GovDataFacade';
@@ -58,9 +59,13 @@ function json(body: unknown, status = 200): Promise<Response> {
 
 describe('GovDataFacade', () => {
   const fetchStub = new FetchStub();
-  const pvogSearchClient = new PvogSearchClient();
-  const pvogAuthorityClient = new PvogAuthorityClient();
-  const fimPortalClient = new FimPortalClient();
+  const pvogSearchClient = new PvogSearchClient(
+    ...testHttpClientDependencies(),
+  );
+  const pvogAuthorityClient = new PvogAuthorityClient(
+    ...testHttpClientDependencies(),
+  );
+  const fimPortalClient = new FimPortalClient(...testHttpClientDependencies());
   const searchServices = jest.fn<
     ReturnType<ServiceSearchProvider['searchServices']>,
     Parameters<ServiceSearchProvider['searchServices']>
@@ -70,7 +75,7 @@ describe('GovDataFacade', () => {
     pvogSearchClient,
     serviceSearchProvider,
     pvogAuthorityClient,
-    new PvogRawClient(),
+    new PvogRawClient(...testHttpClientDependencies()),
     fimPortalClient,
     new ServiceContextAssembler(
       pvogSearchClient,

@@ -5,6 +5,7 @@ import {
 } from '@direktamt/integrations-contracts';
 import { Logger } from '@nestjs/common';
 import { FetchStub } from '../../../test/FetchStub';
+import { testHttpClientDependencies } from '../../../test/UpstreamTestSupport';
 import { UpstreamContractViolationException } from '../common/exceptions/UpstreamContractViolationException';
 import { UpstreamHttpException } from '../common/exceptions/UpstreamHttpException';
 import { AuthorityReference } from './model/AuthorityReference';
@@ -87,7 +88,7 @@ function json(body: unknown, status = 200): Promise<Response> {
 
 describe('PvogAuthorityClient', () => {
   const fetchStub = new FetchStub();
-  const client = new PvogAuthorityClient();
+  const client = new PvogAuthorityClient(...testHttpClientDependencies());
 
   /**
    * Answers the organisation-unit detail by id; an id without a configured

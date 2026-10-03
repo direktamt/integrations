@@ -1,108 +1,170 @@
-import { Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClassConstructor, plainToInstance } from 'class-transformer';
 import { validateSync, ValidationError } from 'class-validator';
 import { CONFIG } from '../../config';
+import {
+  INTEGRATION_CACHE,
+  type IntegrationCache,
+} from './cache/IntegrationCache';
 import { UpstreamContractViolationException } from './exceptions/UpstreamContractViolationException';
 import { UpstreamHttpException } from './exceptions/UpstreamHttpException';
 import { UpstreamNetworkException } from './exceptions/UpstreamNetworkException';
 import { UpstreamTimeoutException } from './exceptions/UpstreamTimeoutException';
+import { parseRetryAfterHeader } from './resilience/RetryAfterHeader';
+import { UpstreamRequestExecutor } from './resilience/UpstreamRequestExecutor';
+import { UpstreamProvider } from './UpstreamProvider';
 import { sanitizeUrlForLogging } from './UrlSanitizer';
 
 export interface QueryParams {
   [key: string]: string | number | boolean | string[] | undefined;
 }
 
+export interface UpstreamReadOptions {
+  /**
+   * Serve the validated result from the integration cache when present and
+   * store a fresh one for the configured TTL. Opt in only for key-based
+   * reads of data that changes rarely (a territory, a catalog entry, an
+   * organisation unit); never for searches or enumerations. Failures are
+   * never cached because only a validated result reaches the cache.
+   */
+  cacheable?: boolean;
+}
+
 /**
- * HTTP gateway shared by all external API clients: native fetch, timeout,
- * wire-contract validation, typed exceptions (see ./exceptions).
+ * HTTP gateway shared by all external API clients: native fetch, wire
+ * contract validation, typed exceptions (see ./exceptions). Every request
+ * runs through the UpstreamRequestExecutor, which applies the provider's
+ * circuit breaker, bounded retries and the request budget
+ * (INTEGRATIONS_HTTP_TIMEOUT_MS); opted-in reads are served from the
+ * integration cache.
  *
  * Logs and exceptions only ever carry the sanitized upstream URL (origin and
  * path); query values such as search terms or postal codes are never logged.
  */
+@Injectable()
 export abstract class BaseHttpClient {
   protected abstract readonly baseUrl: string;
-  protected readonly timeoutMs: number = CONFIG.integrations.httpTimeoutMs;
+  protected abstract readonly provider: UpstreamProvider;
+  protected readonly cacheTtlMs: number = CONFIG.integrations.cache.ttlMs;
   private readonly logger = new Logger(this.constructor.name);
+
+  constructor(
+    private readonly executor: UpstreamRequestExecutor,
+    @Inject(INTEGRATION_CACHE) private readonly cache: IntegrationCache,
+  ) {}
 
   /**
    * GET expecting a single JSON object matching the given wire model.
    */
-  protected async getModel<T extends object>(
+  protected getModel<T extends object>(
     model: ClassConstructor<T>,
     path: string,
     params?: QueryParams,
+    options: UpstreamReadOptions = {},
   ): Promise<T> {
-    const { url, payload } = await this.fetchJson(path, params);
+    return this.read(model.name, path, params, options, (payload, url) => {
+      if (!isJsonObject(payload)) {
+        throw this.contractViolation(url, [
+          `expected a JSON object at the top level, got ${describeJsonValue(payload)}`,
+        ]);
+      }
 
-    if (
-      payload === null ||
-      typeof payload !== 'object' ||
-      Array.isArray(payload)
-    ) {
-      throw this.contractViolation(url, [
-        `expected a JSON object at the top level, got ${describeJsonValue(payload)}`,
-      ]);
-    }
-
-    return this.toValidatedInstance(model, payload, url);
+      return this.toValidatedInstance(model, payload, url);
+    });
   }
 
   /**
    * GET expecting a JSON array whose items match the given wire model.
    */
-  protected async getModelArray<T extends object>(
+  protected getModelArray<T extends object>(
     model: ClassConstructor<T>,
     path: string,
     params?: QueryParams,
+    options: UpstreamReadOptions = {},
   ): Promise<T[]> {
-    const { url, payload } = await this.fetchJson(path, params);
+    return this.read(
+      `${model.name}[]`,
+      path,
+      params,
+      options,
+      (payload, url) => {
+        if (!Array.isArray(payload)) {
+          throw this.contractViolation(url, [
+            `expected a JSON array at the top level, got ${describeJsonValue(payload)}`,
+          ]);
+        }
 
-    if (!Array.isArray(payload)) {
-      throw this.contractViolation(url, [
-        `expected a JSON array at the top level, got ${describeJsonValue(payload)}`,
-      ]);
-    }
-
-    return payload.map((item, index) =>
-      this.toValidatedInstance(model, item, url, `[${index}]`),
+        return payload.map((item, index) =>
+          this.toValidatedInstance(model, item, url, `[${index}]`),
+        );
+      },
     );
   }
 
   /**
    * GET without wire validation; only for endpoints with a dynamic shape.
    */
-  protected async getRawJson<T>(
+  protected getRawJson<T>(
     path: string,
     params?: QueryParams,
+    options: UpstreamReadOptions = {},
   ): Promise<T> {
-    const { payload } = await this.fetchJson(path, params);
-    return payload as T;
+    return this.read('raw', path, params, options, (payload) => payload as T);
   }
 
   /**
-   * Performs the request; the returned `url` is already sanitized for logging.
+   * Cache lookup, request through the executor, parsing, cache store. The
+   * cache key holds the full request URL; it stays in memory and is never
+   * logged. `kind` separates the representations of one URL.
    */
-  private async fetchJson(
+  private async read<T>(
+    kind: string,
     path: string,
-    params?: QueryParams,
-  ): Promise<{ url: string; payload: unknown }> {
+    params: QueryParams | undefined,
+    options: UpstreamReadOptions,
+    parse: (payload: unknown, url: string) => T,
+  ): Promise<T> {
     const requestUrl = this.buildUrl(path, params);
     const url = sanitizeUrlForLogging(requestUrl);
+    const cacheKey = options.cacheable
+      ? `${this.provider}:${kind}:${requestUrl}`
+      : undefined;
 
-    const controller = new AbortController();
+    if (cacheKey !== undefined) {
+      const cached = await this.cache.get<T>(cacheKey);
 
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+      this.logger.debug(
+        `Cache ${cached === undefined ? 'miss' : 'hit'} for ${this.provider}: ${url}`,
+      );
 
-    try {
+      if (cached !== undefined) return cached;
+    }
+
+    const payload = await this.fetchJson(requestUrl, url);
+    const value = parse(payload, url);
+
+    if (cacheKey !== undefined) {
+      await this.cache.set(cacheKey, value, this.cacheTtlMs);
+    }
+
+    return value;
+  }
+
+  /**
+   * One upstream request under the executor's policy; `url` is the
+   * sanitized form used for logs and exceptions.
+   */
+  private fetchJson(requestUrl: string, url: string): Promise<unknown> {
+    return this.executor.execute(this.provider, url, async (signal) => {
       let response: Response;
 
       try {
         response = await fetch(requestUrl, {
-          signal: controller.signal,
+          signal,
           headers: { Accept: 'application/json' },
         });
       } catch (error) {
-        throw this.transportFailure(url, error, controller);
+        throw this.transportFailure(url, error, signal);
       }
 
       if (!response.ok) {
@@ -110,31 +172,39 @@ export abstract class BaseHttpClient {
 
         this.logger.warn(`HTTP ${response.status} from upstream: ${url}`);
 
-        throw new UpstreamHttpException(url, response.status, bodySnippet);
+        throw new UpstreamHttpException(
+          url,
+          response.status,
+          bodySnippet,
+          parseRetryAfterHeader(
+            response.headers.get('retry-after'),
+            Date.now(),
+          ),
+        );
       }
       try {
-        return { url, payload: (await response.json()) as unknown };
+        return (await response.json()) as unknown;
       } catch (error) {
-        if (controller.signal.aborted) {
-          throw this.transportFailure(url, error, controller);
+        if (signal.aborted) {
+          throw this.transportFailure(url, error, signal);
         }
 
         throw this.contractViolation(url, ['response body is not valid JSON']);
       }
-    } finally {
-      clearTimeout(timer);
-    }
+    });
   }
 
   private transportFailure(
     url: string,
     error: unknown,
-    controller: AbortController,
+    signal: AbortSignal,
   ): UpstreamTimeoutException | UpstreamNetworkException {
-    if (controller.signal.aborted) {
-      this.logger.error(`Timed out after ${this.timeoutMs} ms: ${url}`);
+    if (signal.aborted) {
+      const budgetMs = this.executor.requestBudgetMs;
 
-      return new UpstreamTimeoutException(url, this.timeoutMs);
+      this.logger.error(`Timed out after ${budgetMs} ms: ${url}`);
+
+      return new UpstreamTimeoutException(url, budgetMs);
     }
 
     this.logger.error(`Network failure for ${url}`, error);
@@ -148,11 +218,7 @@ export abstract class BaseHttpClient {
     url: string,
     pathPrefix = '',
   ): T {
-    if (
-      payload === null ||
-      typeof payload !== 'object' ||
-      Array.isArray(payload)
-    ) {
+    if (!isJsonObject(payload)) {
       throw this.contractViolation(url, [
         `${pathPrefix || 'value'}: expected a JSON object, got ${describeJsonValue(payload)}`,
       ]);
@@ -199,6 +265,10 @@ export abstract class BaseHttpClient {
     }
     return url.toString();
   }
+}
+
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function flattenValidationErrors(

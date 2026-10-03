@@ -1,4 +1,5 @@
 import { FetchStub } from '../../../../../test/FetchStub';
+import { testHttpClientDependencies } from '../../../../../test/UpstreamTestSupport';
 import { PvogV7ServiceSearchProvider } from './PvogV7ServiceSearchProvider';
 
 /**
@@ -27,7 +28,9 @@ const SERVICE_DESCRIPTION = {
 
 describe('PvogV7ServiceSearchProvider', () => {
   const fetchStub = new FetchStub();
-  const provider = new PvogV7ServiceSearchProvider();
+  const provider = new PvogV7ServiceSearchProvider(
+    ...testHttpClientDependencies(),
+  );
 
   beforeAll(() => {
     fetchStub.install();
