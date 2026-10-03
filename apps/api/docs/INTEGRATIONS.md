@@ -367,19 +367,22 @@ Wire model: `WireServiceDescription` (with `WireAuthorityReference` for
 
 ```
 GET /v6/servicedescriptions/{lbid}/detail?ars={ars}&useArsHierarchy={bool}   # organisations[] (1.4)
-GET /v5/organisationunits/detail?q={organisationUnitId}                     # one call per listed unit
+GET /v5/organisationunits/detail?q={organisationUnitId}&lbId={lbid}&ars={ars}  # one call per listed unit
 ```
 
 The service detail lists the responsible organisation units in
 `organisations[]` as a reduced view: `id`, `title`, `role` (XZuFi code list
 `xzufi.zustaendigkeitsrolle`) and `criteria`. The role is already resolved
 for the requested territory and hierarchy setting. The organisation-unit
-detail then supplies addresses, contact channels and web addresses.
+detail then supplies addresses, contact channels and web addresses; it is
+requested with `lbId` and `ars` so that PVOG answers the view of the unit
+for this service and territory (role, contact persons and forms are
+resolved against them) rather than the unit's general card.
 
 Request (first unit of the Köln reference service):
 
 ```
-GET https://pvog.fitko.net/suchdienst/api/v5/organisationunits/detail?q=L100002.OE.146016735
+GET https://pvog.fitko.net/suchdienst/api/v5/organisationunits/detail?q=L100002.OE.146016735&lbId=L100002.LB.121407320&ars=053150000000
 ```
 
 Response (trimmed):
@@ -457,12 +460,13 @@ codes marked "live" were observed in 43 units across six territories):
 
 Notes:
 
-- `ars` and `lbId` on the unit detail only concretize the role and filter
-  contact persons and forms, none of which this project consumes; the unit is
-  requested by `q` alone and the role is taken from the service detail. With
-  an `ars` the unit is not responsible for, the unit detail still answers 200
-  but reports the role "Ansprechpunkt", so the service-detail role is the
-  authoritative one.
+- `ars` and `lbId` on the unit detail concretize the role and filter contact
+  persons and forms. The service relation sends both so that the unit is
+  answered in its service-specific view (the public contract does not yet
+  expose contact persons or forms; the role is still taken from the service
+  detail, which resolves it with the hierarchy setting). Without them — the
+  online-service relation has no service context — the detail is the
+  unit's general card with the role "Ansprechpunkt".
 - An unknown unit id yields 404 with the same body as an unknown service; the
   integrations API passes it on as 404.
 - `GET /v2/organisationunits/titles?ars=&lbId=` ✅ returns the same reduced
@@ -984,6 +988,10 @@ checklist for coding agents.
   deprecation header, 404 for an unknown id) and implemented (1.7) for
   `GET /online-services/{id}/authorities`; role enumeration and sampled
   values recorded.
+- **2026-10-03** (responsible authorities): the organisation-unit detail
+  behind `GET /services/{id}/authorities` is requested with `lbId` and `ars`
+  (service-specific view) instead of `q` alone; the online-service relation
+  stays relation-based. Drift probe updated accordingly.
 - **2026-10-03** (service search): adapters declare
   `ServiceSearchCapabilities`; `GET /services` rejects options the active
   adapter cannot honour with 400 instead of dropping them. With v8beta1

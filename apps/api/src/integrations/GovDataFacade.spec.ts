@@ -230,8 +230,8 @@ describe('GovDataFacade', () => {
     expect(serviceUrl.searchParams.get('useArsHierarchy')).toBe('false');
     const unitUrl = new URL(fetchStub.calls[1].url);
     expect(unitUrl.searchParams.get('q')).toBe('L100002.OE.1');
-    expect(unitUrl.searchParams.has('ars')).toBe(false);
-    expect(unitUrl.searchParams.has('lbId')).toBe(false);
+    expect(unitUrl.searchParams.get('lbId')).toBe('L100002.LB.1');
+    expect(unitUrl.searchParams.get('ars')).toBe('053150000000');
 
     expect(authorities).toMatchObject([
       {

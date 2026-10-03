@@ -190,6 +190,11 @@ describe('ServiceContextAssembler', () => {
         masterTextPath('B100019', '582787'),
       ].sort(),
     );
+    const unitUrl = new URL(
+      fetchStub.calls[requestedPaths().indexOf(UNIT_PATH)].url,
+    );
+    expect(unitUrl.searchParams.get('lbId')).toBe('L100002.LB.1');
+    expect(unitUrl.searchParams.get('ars')).toBe('053150000000');
     const onlineServicesUrl = new URL(
       fetchStub.calls[requestedPaths().indexOf(ONLINE_SERVICES_PATH)].url,
     );

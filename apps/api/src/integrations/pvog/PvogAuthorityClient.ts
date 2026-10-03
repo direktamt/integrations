@@ -12,6 +12,7 @@ import { BaseHttpClient } from '../common/BaseHttpClient';
 import { UpstreamProvider } from '../common/UpstreamProvider';
 import { mapConcurrently } from '../common/Concurrency';
 import { nonEmpty } from '../common/OptionalText';
+import { AuthorityDetailScope } from './model/AuthorityDetailScope';
 import { AuthorityReference } from './model/AuthorityReference';
 import { OnlineServiceAuthorityReference } from './model/OnlineServiceAuthorityReference';
 import { WireAuthority } from './wire/WireAuthority';
@@ -42,10 +43,13 @@ export class PvogAuthorityClient extends BaseHttpClient {
    * Contact data of the referenced organisation units, in the order of the
    * references. Every unit is one upstream call; calls run in parallel up
    * to AUTHORITY_DETAIL_CONCURRENCY. Callers de-duplicate references so
-   * that no unit is loaded twice.
+   * that no unit is loaded twice. With a scope the detail is requested for
+   * that service and territory (`lbId`, `ars`), which is how PVOG resolves
+   * the service-specific view of a unit; without one it is the general card.
    */
   async listAuthorities(
     references: AuthorityReference[],
+    scope?: AuthorityDetailScope,
   ): Promise<PublicAuthority[]> {
     const units = await mapConcurrently(
       references,
@@ -54,7 +58,7 @@ export class PvogAuthorityClient extends BaseHttpClient {
         this.getModel(
           WireAuthority,
           '/v5/organisationunits/detail',
-          { q: reference.id },
+          { q: reference.id, lbId: scope?.serviceId, ars: scope?.regionalKey },
           { cacheable: true },
         ),
     );

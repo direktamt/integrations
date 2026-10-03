@@ -10,6 +10,7 @@ import { IntegrationException } from './common/exceptions/IntegrationException';
 import { UpstreamHttpException } from './common/exceptions/UpstreamHttpException';
 import { FimPortalClient } from './fim/FimPortalClient';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
+import { AuthorityDetailScope } from './pvog/model/AuthorityDetailScope';
 import { ServiceAuthorityReference } from './pvog/model/ServiceAuthorityReference';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
 
@@ -67,7 +68,10 @@ export class ServiceContextAssembler {
     const [authorities, onlineServices, [catalogEntries, masterTexts]] =
       await Promise.all([
         this.loadPart(ServiceContextPart.Authorities, () =>
-          this.listServiceAuthorities(detail.authorityReferences),
+          this.listServiceAuthorities(detail.authorityReferences, {
+            serviceId,
+            regionalKey,
+          }),
         ),
         this.loadPart(ServiceContextPart.OnlineServices, () =>
           serviceCatalogKeys.length === 0
@@ -105,9 +109,12 @@ export class ServiceContextAssembler {
 
   private async listServiceAuthorities(
     references: ServiceAuthorityReference[],
+    scope: AuthorityDetailScope,
   ): Promise<ServiceAuthority[]> {
-    const authorities =
-      await this.pvogAuthorityClient.listAuthorities(references);
+    const authorities = await this.pvogAuthorityClient.listAuthorities(
+      references,
+      scope,
+    );
 
     return authorities.map((authority, index) => ({
       authority,

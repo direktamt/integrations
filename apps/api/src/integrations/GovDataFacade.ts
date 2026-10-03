@@ -91,7 +91,8 @@ export class GovDataFacade {
    * Authorities responsible for one service within a territory, with their
    * roles, addresses and contact channels; empty when the service names
    * none. The service detail supplies the references and roles, the
-   * organisation-unit detail the contact data.
+   * organisation-unit detail — requested for this service and territory —
+   * the contact data.
    */
   async listServiceAuthorities(
     serviceId: string,
@@ -105,6 +106,7 @@ export class GovDataFacade {
     );
     const authorities = await this.pvogAuthorityClient.listAuthorities(
       detail.authorityReferences,
+      { serviceId, regionalKey },
     );
 
     return authorities.map((authority, index) => ({

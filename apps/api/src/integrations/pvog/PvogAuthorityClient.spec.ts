@@ -125,6 +125,20 @@ describe('PvogAuthorityClient', () => {
   });
 
   describe('listAuthorities', () => {
+    it('requests the service-specific view of a unit when given a scope', async () => {
+      serveUnits({ 'L100002.OE.1': AUTHORITY });
+
+      await client.listAuthorities([REFERENCE], {
+        serviceId: 'L100002.LB.1',
+        regionalKey: '053150000000',
+      });
+
+      const url = fetchStub.lastUrl();
+      expect(url.searchParams.get('q')).toBe('L100002.OE.1');
+      expect(url.searchParams.get('lbId')).toBe('L100002.LB.1');
+      expect(url.searchParams.get('ars')).toBe('053150000000');
+    });
+
     it('maps one authority with addresses, contacts and websites', async () => {
       serveUnits({ 'L100002.OE.1': AUTHORITY });
 

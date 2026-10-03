@@ -168,6 +168,8 @@ export function buildUpstreamProbes(): UpstreamProbe[] {
       handbookSection: '1.5',
       url: url(pvog, '/v5/organisationunits/detail', {
         q: KOELN_ORGANISATION_UNIT_ID,
+        lbId: KOELN_SERVICE_ID,
+        ars: KOELN_ARS,
       }),
       kind: ProbeKind.Wire,
       wireModel: WireAuthority,

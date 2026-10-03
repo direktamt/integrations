@@ -122,7 +122,9 @@ the public contract stays `OnlineService[]`.
 `GET /services/{id}/authorities` composes two PVOG resources inside
 `PvogAuthorityClient`: the service detail names the responsible organisation
 units with their roles, then one organisation-unit detail per unit is loaded
-in parallel and mapped to `PublicAuthority` (normalized role, address type
+in parallel — requested for that service and territory (`lbId`, `ars`), the
+view PVOG resolves the unit's role, contact persons and forms for — and
+mapped to `PublicAuthority` (normalized role, address type
 and contact type derived from the XZuFi/XÖV code lists documented in the
 handbook). Consumers never see organisation-unit ids or code-list codes as
 part of the request; an unknown service or unit is answered with 404. The
