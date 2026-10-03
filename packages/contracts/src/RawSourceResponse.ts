@@ -1,4 +1,4 @@
-import { JsonValue } from './JsonValue';
+import { JsonValue } from './JsonValue.js';
 
 /**
  * Envelope of a raw provider representation. `data` is the upstream body

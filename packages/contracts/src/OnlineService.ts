@@ -1,4 +1,4 @@
-import { ServiceSectionLink } from './ServiceSectionLink';
+import { ServiceSectionLink } from './ServiceSectionLink.js';
 
 /**
  * An online application service (direct submission).

@@ -1,4 +1,4 @@
-import { ServiceSection } from './ServiceSection';
+import { ServiceSection } from './ServiceSection.js';
 
 /**
  * One public service as described for a territory.

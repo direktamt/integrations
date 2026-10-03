@@ -1,4 +1,4 @@
-import { AuthorityContactType } from './AuthorityContactType';
+import { AuthorityContactType } from './AuthorityContactType.js';
 
 /**
  * One contact channel of an authority (phone number, e-mail address, ...).

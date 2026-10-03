@@ -1,5 +1,5 @@
-import { ServiceSectionLink } from './ServiceSectionLink';
-import { ServiceSectionType } from './ServiceSectionType';
+import { ServiceSectionLink } from './ServiceSectionLink.js';
+import { ServiceSectionType } from './ServiceSectionType.js';
 
 /**
  * One content section of a service description.

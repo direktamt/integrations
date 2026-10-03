@@ -1,4 +1,4 @@
-import { CatalogEntry } from './CatalogEntry';
+import { CatalogEntry } from './CatalogEntry.js';
 
 /**
  * Result page of a catalog search.

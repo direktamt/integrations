@@ -1,5 +1,5 @@
-import { AuthorityRole } from './AuthorityRole';
-import { PublicAuthority } from './PublicAuthority';
+import { AuthorityRole } from './AuthorityRole.js';
+import { PublicAuthority } from './PublicAuthority.js';
 
 /**
  * An authority responsible for a service within a territory, with the role

@@ -1,5 +1,5 @@
-import { AuthorityAddress } from './AuthorityAddress';
-import { AuthorityContact } from './AuthorityContact';
+import { AuthorityAddress } from './AuthorityAddress.js';
+import { AuthorityContact } from './AuthorityContact.js';
 
 /**
  * A public authority (organisation unit) with the published ways to reach

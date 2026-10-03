@@ -1,4 +1,4 @@
-import { ServiceContextPart } from './ServiceContextPart';
+import { ServiceContextPart } from './ServiceContextPart.js';
 
 /**
  * Whether every part of a service context could be loaded.

@@ -1,9 +1,9 @@
-import { CatalogEntry } from './CatalogEntry';
-import { OnlineService } from './OnlineService';
-import { ParsedMasterText } from './ParsedMasterText';
-import { PublicServiceDescription } from './PublicServiceDescription';
-import { ServiceAuthority } from './ServiceAuthority';
-import { ServiceContextStatus } from './ServiceContextStatus';
+import { CatalogEntry } from './CatalogEntry.js';
+import { OnlineService } from './OnlineService.js';
+import { ParsedMasterText } from './ParsedMasterText.js';
+import { PublicServiceDescription } from './PublicServiceDescription.js';
+import { ServiceAuthority } from './ServiceAuthority.js';
+import { ServiceContextStatus } from './ServiceContextStatus.js';
 
 /**
  * Everything the integration layer knows about one public service within a

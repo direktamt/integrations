@@ -1,4 +1,4 @@
-import { AuthorityAddressType } from './AuthorityAddressType';
+import { AuthorityAddressType } from './AuthorityAddressType.js';
 
 /**
  * A postal or visiting address of an authority.

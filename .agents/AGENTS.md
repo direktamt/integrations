@@ -9,7 +9,8 @@ inspecting it. All code and documentation stay within this integration
 boundary; the broader DirektAmt application is not part of this repository.
 
 Monorepo: `apps/api/` (NestJS anti-corruption layer), `apps/ui/` (developer
-console), and `packages/contracts/` (shared response models). API-specific
+console), `packages/contracts/` (shared response models) and
+`packages/client/` (typed TypeScript client over the API). API-specific
 instructions: `apps/api/.agents/AGENTS.md`.
 
 ## Hard conventions (apply everywhere)
@@ -47,8 +48,11 @@ instructions: `apps/api/.agents/AGENTS.md`.
    the integrations API and consumed by its clients live in
    `packages/contracts/`. Producers and consumers import
    `@direktamt/integrations-contracts`; they never keep local mirror copies.
-   Upstream wire models, request DTOs and integration-only option models stay
-   in the layer that owns them.
+   The typed client in `packages/client/` re-exports those contracts and adds
+   only request types, options and the error model; a new or changed public
+   endpoint is mirrored there in the same change. Upstream wire models,
+   request DTOs and integration-only option models stay in the layer that
+   owns them.
 
 7. **Integration scope only.** Add code only when it integrates, normalizes,
    verifies or inspects official upstream data. The deployable applications

@@ -31,7 +31,8 @@ This project provides one normalized boundary over those sources:
   an unvalidated pass-through because its upstream representation is
   explicitly unstable.
 - Consumers depend on one HTTP API and one set of TypeScript response models
-  rather than on individual upstream endpoints.
+  rather than on individual upstream endpoints; a first-party typed client
+  (`@direktamt/integrations-client`) wraps that API for TypeScript consumers.
 
 ## Architecture
 
@@ -61,6 +62,10 @@ integrations API (NestJS)
   only; German appears in upstream query names, URL paths and data content.
 - **Shared TypeScript contracts** (`packages/contracts`): the response models
   both the API and the console compile against.
+- **Typed client** (`packages/client`): `DirektAmtClient` over the native
+  `fetch` with domain groups (`locations`, `services`, `authorities`,
+  `onlineServices`, `catalog`, `masterTexts`, `raw`), typed errors and the
+  shared contracts; see [`packages/client/README.md`](packages/client/README.md).
 - **React inspection console** (`apps/ui`): a local developer tool for
   exercising the API and inspecting live upstream data.
 
@@ -168,13 +173,14 @@ are checked; there is no wire model and no normalization.
 
 ## Repository structure
 
-| Path                  | Description                                                                        |
-| --------------------- | ---------------------------------------------------------------------------------- |
-| `apps/api/`           | NestJS anti-corruption layer over the upstream APIs ([README](apps/api/README.md)) |
-| `apps/api/docs/`      | Handbook of the upstream APIs ([INTEGRATIONS.md](apps/api/docs/INTEGRATIONS.md))   |
-| `apps/ui/`            | React inspection console for the integrations API ([README](apps/ui/README.md))    |
-| `packages/contracts/` | Shared TypeScript response models (`@direktamt/integrations-contracts`)            |
-| `.agents/`            | Conventions and skills for coding agents working in this repository                |
+| Path                  | Description                                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `apps/api/`           | NestJS anti-corruption layer over the upstream APIs ([README](apps/api/README.md))                          |
+| `apps/api/docs/`      | Handbook of the upstream APIs ([INTEGRATIONS.md](apps/api/docs/INTEGRATIONS.md))                            |
+| `apps/ui/`            | React inspection console for the integrations API ([README](apps/ui/README.md))                             |
+| `packages/contracts/` | Shared TypeScript response models (`@direktamt/integrations-contracts`)                                     |
+| `packages/client/`    | Typed TypeScript client for the API (`@direktamt/integrations-client`, [README](packages/client/README.md)) |
+| `.agents/`            | Conventions and skills for coding agents working in this repository                                         |
 
 ## Quick start
 
@@ -186,7 +192,8 @@ npm ci
 npm run dev
 ```
 
-`npm ci` installs all workspaces and builds the shared contracts package.
+`npm ci` installs all workspaces and builds the shared contracts and client
+packages.
 `npm run dev` starts the API on `http://localhost:3000` (Swagger UI at
 `http://localhost:3000/docs`) and the console on `http://localhost:5173`.
 
@@ -224,8 +231,8 @@ npm run dev:ui       # console only
 npm run lint         # ESLint in all workspaces, read-only
 npm run lint:fix     # ESLint with auto-fix
 npm run typecheck    # tsc --noEmit in all workspaces
-npm run test         # API unit tests (stubbed fetch, no network)
-npm run build        # contracts, API and console
+npm run test         # API and client unit tests (stubbed fetch, no network)
+npm run build        # contracts, client, API and console
 npm run check        # lint, typecheck, test, build
 ```
 

@@ -1,4 +1,4 @@
-import { PublicServiceDescription } from './PublicServiceDescription';
+import { PublicServiceDescription } from './PublicServiceDescription.js';
 
 /**
  * Result page of a service search.
