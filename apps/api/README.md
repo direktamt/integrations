@@ -171,11 +171,16 @@ sections, so that adapter loads every hit's full description from the detail
 endpoint (one search call plus one detail call per hit, at most 8 in flight)
 and maps it with the same `ServiceDescriptionMapper` the detail endpoint
 uses. Absorbed differences: the page totals sit in a separate `page`
-object; the search is always fuzzy and always evaluated at request time, so
-`fuzzySearch` and `validDate` have no effect; `summary` and
-`targetAudiences` are not published by v8beta1 or the detail endpoint and
-stay absent; the detail endpoint publishes a different section set than the
-v7 search hit (see the handbook). `ServiceSearchCompatibility.spec.ts`
+object; `summary` and `targetAudiences` are not published by v8beta1 or the
+detail endpoint and stay absent; the detail endpoint publishes a different
+section set than the v7 search hit (see the handbook). Not absorbed but
+declared: every adapter exposes `ServiceSearchCapabilities` (largest page
+size, exact search, validity date) and `GovDataFacade` rejects a request
+the configured adapter cannot honour with 400 instead of dropping the
+option. v8beta1 always matches fuzzily and evaluates validity at request
+time, so `fuzzySearch=false` and `validDate` are rejected while it is
+active, and its page size is capped at 50 because every hit costs one
+detail call (one API request stays within 51 upstream calls). `ServiceSearchCompatibility.spec.ts`
 maps equivalent v7 and v8beta1 fixtures and asserts the same normalized
 result; `npm run verify:pvog-service-search-compat` does the same against
 the live APIs (see the handbook for the last run).
@@ -259,7 +264,10 @@ so that invalid input is answered with 400 before any upstream call: service
 search `size` 5–9999 and `page` 0–100, catalog `limit` 1–200, plus the
 required-field and type rules. Remaining upstream 4xx responses other than
 404 are mapped to 502 because, once the known limits are checked here, they
-indicate a contract problem rather than user input.
+indicate a contract problem rather than user input. Limits that depend on
+the configured service-search adapter (`ServiceSearchCapabilities`: page
+size, exact search, validity date) are checked by `GovDataFacade` and
+answered by `UnsupportedSearchOptionsFilter` in the same 400 shape.
 
 ## Exception handling
 

@@ -263,7 +263,9 @@ Not available: `fuzzysearch` (the search is always fuzzy — a misspelled
 query that yields nothing on v7 without `fuzzysearch=true` yields hits
 here), `validDate` (validity is always evaluated at request time),
 `ignoreLeikaTypes`, `applyDynamicParams`. Unknown parameters are ignored
-silently.
+silently. The integrations API therefore rejects `fuzzySearch=false` and
+`validDate` with 400 while v8beta1 is active (declared in the adapter's
+`ServiceSearchCapabilities`) instead of dropping them.
 
 Request:
 
@@ -308,7 +310,9 @@ Differences to v7 and how the adapter absorbs them:
   `useArsHierarchy` — one search call plus one detail call per hit, at most
   8 in flight — and keeps `arsFederalstate` from the hit because the detail
   does not deliver it. A hit whose detail answers 404 is a contract
-  violation.
+  violation. Because of the fan-out the adapter caps the page size at 50
+  (`ServiceSearchCapabilities.maxPageSize`): one API request causes at most
+  51 upstream calls, larger sizes are rejected with 400.
 - Page totals live in `serviceDescriptions.page` instead of next to the
   content. Totals may differ from v7 for the same query (10 versus 8 for the
   reference query on 2026-09-30); ranking may differ as well.
@@ -980,6 +984,10 @@ checklist for coding agents.
   deprecation header, 404 for an unknown id) and implemented (1.7) for
   `GET /online-services/{id}/authorities`; role enumeration and sampled
   values recorded.
+- **2026-10-03** (service search): adapters declare
+  `ServiceSearchCapabilities`; `GET /services` rejects options the active
+  adapter cannot honour with 400 instead of dropping them. With v8beta1
+  that is `fuzzySearch=false`, `validDate` and `size` above 50.
 - **2026-10-03** (contract): `federalStateKeys` and `targetAudiences` of
   `PublicServiceDescription` are optional. They are absent when the
   endpoint does not publish the field (detail endpoint, v8beta1 search) and

@@ -2,6 +2,7 @@ import type { PublicServiceDescription } from '@direktamt/integrations-contracts
 import { FetchStub } from '../../../../test/FetchStub';
 import { testHttpClientDependencies } from '../../../../test/UpstreamTestSupport';
 import { PvogSearchClient } from '../PvogSearchClient';
+import { findUnsupportedServiceSearchOptions } from './ServiceSearchCapabilities';
 import { PvogV7ServiceSearchProvider } from './v7/PvogV7ServiceSearchProvider';
 import { PvogV8BetaServiceSearchProvider } from './v8beta1/PvogV8BetaServiceSearchProvider';
 
@@ -246,18 +247,14 @@ describe('service search compatibility v7 ↔ v8beta1', () => {
     ]);
   });
 
-  it('translates the shared options identically and drops what v8beta1 does not support', async () => {
+  it('translates the shared options identically', async () => {
     await v7.searchServices('053150000000', 'Wohnsitz anmelden', {
       ...options,
-      fuzzySearch: false,
       useRegionalHierarchy: false,
-      validDate: '2026-09-30',
     });
     await v8beta1.searchServices('053150000000', 'Wohnsitz anmelden', {
       ...options,
-      fuzzySearch: false,
       useRegionalHierarchy: false,
-      validDate: '2026-09-30',
     });
 
     const v7Params = new URL(fetchStub.calls[0].url).searchParams;
@@ -276,9 +273,33 @@ describe('service search compatibility v7 ↔ v8beta1', () => {
       expect(v8Params.getAll(shared)).toEqual(v7Params.getAll(shared));
     }
     expect(v8Params.get('ars')).toBe('053150000000');
-    expect(v7Params.get('fuzzysearch')).toBe('false');
-    expect(v7Params.get('validDate')).toBe('2026-09-30');
+    expect(v7Params.has('fuzzysearch')).toBe(true);
     expect(v8Params.has('fuzzysearch')).toBe(false);
-    expect(v8Params.has('validDate')).toBe(false);
+  });
+
+  it('declares what v8beta1 cannot honour instead of dropping it', () => {
+    expect(v7.capabilities).toEqual({
+      maxPageSize: 9999,
+      supportsExactSearch: true,
+      supportsValidDate: true,
+    });
+    expect(v8beta1.capabilities).toEqual({
+      maxPageSize: 50,
+      supportsExactSearch: false,
+      supportsValidDate: false,
+    });
+
+    const demanding = {
+      ...options,
+      size: 51,
+      fuzzySearch: false,
+      validDate: '2026-09-30',
+    };
+    expect(
+      findUnsupportedServiceSearchOptions(demanding, v7.capabilities),
+    ).toEqual([]);
+    expect(
+      findUnsupportedServiceSearchOptions(demanding, v8beta1.capabilities),
+    ).toHaveLength(3);
   });
 });

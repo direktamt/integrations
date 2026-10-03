@@ -3,8 +3,16 @@ import { ServiceSearchProvider } from './ServiceSearchProvider';
 import { selectServiceSearchProvider } from './ServiceSearchProviderSelection';
 
 describe('selectServiceSearchProvider', () => {
-  const v7 = { searchServices: jest.fn() } as ServiceSearchProvider;
-  const v8beta1 = { searchServices: jest.fn() } as ServiceSearchProvider;
+  const capabilities = {
+    maxPageSize: 9999,
+    supportsExactSearch: true,
+    supportsValidDate: true,
+  };
+  const v7: ServiceSearchProvider = { capabilities, searchServices: jest.fn() };
+  const v8beta1: ServiceSearchProvider = {
+    capabilities,
+    searchServices: jest.fn(),
+  };
   const providers = { v7, v8beta1 };
 
   it('selects the v7 adapter for the default version', () => {

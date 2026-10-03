@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { UnsupportedSearchOptionsFilter } from './api/filter/UnsupportedSearchOptionsFilter';
 import { UpstreamExceptionFilter } from './api/filter/UpstreamExceptionFilter';
 import { AppModule } from './AppModule';
 import { CONFIG } from './config';
@@ -10,7 +11,10 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({ origin: CONFIG.corsOrigins });
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
-  app.useGlobalFilters(new UpstreamExceptionFilter());
+  app.useGlobalFilters(
+    new UpstreamExceptionFilter(),
+    new UnsupportedSearchOptionsFilter(),
+  );
 
   const openApiConfig = new DocumentBuilder()
     .setTitle('Direktamt Integrations API')

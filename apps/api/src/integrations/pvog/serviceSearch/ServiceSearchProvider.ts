@@ -1,5 +1,6 @@
 import type { ServiceSearchResult } from '@direktamt/integrations-contracts';
 import { ServiceSearchOptions } from '../model/ServiceSearchOptions';
+import { ServiceSearchCapabilities } from './ServiceSearchCapabilities';
 
 /**
  * Injection token of the service-search adapter selected at startup
@@ -14,6 +15,12 @@ export const SERVICE_SEARCH_PROVIDER = Symbol('ServiceSearchProvider');
  * change when the upstream version does.
  */
 export interface ServiceSearchProvider {
+  /**
+   * What this adapter can honour; the facade rejects a request beyond it
+   * before any upstream call.
+   */
+  readonly capabilities: ServiceSearchCapabilities;
+
   searchServices(
     regionalKey: string,
     query: string,

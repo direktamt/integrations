@@ -5,6 +5,7 @@ import { BaseHttpClient } from '../../../common/BaseHttpClient';
 import { UpstreamProvider } from '../../../common/UpstreamProvider';
 import { ServiceSearchOptions } from '../../model/ServiceSearchOptions';
 import { toServiceDescription } from '../../ServiceDescriptionMapper';
+import { ServiceSearchCapabilities } from '../ServiceSearchCapabilities';
 import { ServiceSearchProvider } from '../ServiceSearchProvider';
 import { WireV7ServiceSearchResponse } from './wire/WireV7ServiceSearchResponse';
 
@@ -20,6 +21,12 @@ export class PvogV7ServiceSearchProvider
 {
   protected readonly baseUrl = CONFIG.integrations.pvogSearchBaseUrl;
   protected readonly provider: UpstreamProvider = 'PVOG';
+
+  readonly capabilities: ServiceSearchCapabilities = {
+    maxPageSize: 9999,
+    supportsExactSearch: true,
+    supportsValidDate: true,
+  };
 
   async searchServices(
     regionalKey: string,

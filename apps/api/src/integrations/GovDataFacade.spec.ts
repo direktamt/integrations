@@ -8,7 +8,9 @@ import { GovDataFacade } from './GovDataFacade';
 import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
 import { PvogRawClient } from './pvog/PvogRawClient';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
+import { ServiceSearchCapabilities } from './pvog/serviceSearch/ServiceSearchCapabilities';
 import { ServiceSearchProvider } from './pvog/serviceSearch/ServiceSearchProvider';
+import { UnsupportedServiceSearchOptionsException } from './pvog/serviceSearch/UnsupportedServiceSearchOptionsException';
 import { ServiceContextAssembler } from './ServiceContextAssembler';
 
 /**
@@ -70,19 +72,29 @@ describe('GovDataFacade', () => {
     ReturnType<ServiceSearchProvider['searchServices']>,
     Parameters<ServiceSearchProvider['searchServices']>
   >();
-  const serviceSearchProvider: ServiceSearchProvider = { searchServices };
-  const facade = new GovDataFacade(
-    pvogSearchClient,
-    serviceSearchProvider,
-    pvogAuthorityClient,
-    new PvogRawClient(...testHttpClientDependencies()),
-    fimPortalClient,
-    new ServiceContextAssembler(
+  const facadeWith = (capabilities: ServiceSearchCapabilities) =>
+    new GovDataFacade(
       pvogSearchClient,
+      { searchServices, capabilities },
       pvogAuthorityClient,
+      new PvogRawClient(...testHttpClientDependencies()),
       fimPortalClient,
-    ),
-  );
+      new ServiceContextAssembler(
+        pvogSearchClient,
+        pvogAuthorityClient,
+        fimPortalClient,
+      ),
+    );
+  const facade = facadeWith({
+    maxPageSize: 9999,
+    supportsExactSearch: true,
+    supportsValidDate: true,
+  });
+  const reducedFacade = facadeWith({
+    maxPageSize: 50,
+    supportsExactSearch: false,
+    supportsValidDate: false,
+  });
 
   function serve(service: unknown, unitsById: Record<string, unknown>) {
     fetchStub.respondWith((url) => {
@@ -135,6 +147,51 @@ describe('GovDataFacade', () => {
       options,
     );
     expect(fetchStub.calls).toHaveLength(0);
+  });
+
+  it('rejects options the configured adapter cannot honour before any call', async () => {
+    const callsBefore = searchServices.mock.calls.length;
+
+    const error = await reducedFacade
+      .searchServices('053150000000', 'Wohnsitz', {
+        size: 100,
+        page: 0,
+        fuzzySearch: false,
+        useRegionalHierarchy: true,
+        validDate: '2026-10-03',
+      })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(UnsupportedServiceSearchOptionsException);
+    expect(
+      (error as UnsupportedServiceSearchOptionsException).problems,
+    ).toEqual([
+      expect.stringContaining('size'),
+      expect.stringContaining('fuzzySearch'),
+      expect.stringContaining('validDate'),
+    ]);
+    expect(searchServices.mock.calls).toHaveLength(callsBefore);
+    expect(fetchStub.calls).toHaveLength(0);
+  });
+
+  it('passes the options a reduced adapter supports through', async () => {
+    const result = { services: [], totalElements: 0, totalPages: 0 };
+    searchServices.mockResolvedValue(result);
+    const options = {
+      size: 50,
+      page: 0,
+      fuzzySearch: true,
+      useRegionalHierarchy: false,
+    };
+
+    await expect(
+      reducedFacade.searchServices('053150000000', 'Wohnsitz', options),
+    ).resolves.toBe(result);
+    expect(searchServices).toHaveBeenLastCalledWith(
+      '053150000000',
+      'Wohnsitz',
+      options,
+    );
   });
 
   it('returns the public service description without the references', async () => {

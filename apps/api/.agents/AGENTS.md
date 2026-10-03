@@ -63,6 +63,10 @@ npm run lint --workspace @direktamt/integrations-api
      (`PVOG_SERVICE_SEARCH_VERSION`, v7 default). Never merge versions into
      one wire model, never select per request, never expose the version in
      a domain payload, and never make a beta the default without a decision.
+     An adapter declares `ServiceSearchCapabilities`; an option the
+     configured adapter cannot honour is rejected at the facade (400), never
+     silently dropped, and an adapter that fans out per hit caps its page
+     size.
    - Raw provider representations live under `/raw/{provider}` only
      (`RawPvogController`, `PvogRawClient`): a static whitelist of upstream
      resources, the caller supplies an object id and nothing else, the body

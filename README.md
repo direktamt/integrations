@@ -111,7 +111,9 @@ when the upstream version does. The adapter is chosen once at startup with
 `PVOG_SERVICE_SEARCH_VERSION` (`v7` unless configured otherwise; an unknown
 value stops the API), never per request. The v8beta1 hits are a reduced
 view, so that adapter completes every hit from the detail endpoint to keep
-the contract; `npm run verify:pvog-service-search-compat` runs both
+the contract, within a page-size cap of 50; the options it cannot honour
+(`fuzzySearch=false`, `validDate`) are rejected with 400 rather than
+silently dropped; `npm run verify:pvog-service-search-compat` runs both
 adapters against the live APIs and reports the semantic differences. v7
 remains the production default until a separate decision changes it; the
 beta adapter comes with no stability promise.

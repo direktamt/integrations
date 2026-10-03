@@ -17,6 +17,7 @@ import { UpstreamRequestExecutor } from '../../../common/resilience/UpstreamRequ
 import { ServiceDescriptionDetail } from '../../model/ServiceDescriptionDetail';
 import { ServiceSearchOptions } from '../../model/ServiceSearchOptions';
 import { PvogSearchClient } from '../../PvogSearchClient';
+import { ServiceSearchCapabilities } from '../ServiceSearchCapabilities';
 import { ServiceSearchProvider } from '../ServiceSearchProvider';
 import { WireV8ServiceSearchHit } from './wire/WireV8ServiceSearchHit';
 import { WireV8ServiceSearchResponse } from './wire/WireV8ServiceSearchResponse';
@@ -27,11 +28,13 @@ import { WireV8ServiceSearchResponse } from './wire/WireV8ServiceSearchResponse'
  * teaser, federal states, languages, online-service links), so the adapter
  * loads every hit's full description from the detail endpoint to keep the
  * public contract identical to v7 — one search call plus one detail call
- * per hit, at most DETAIL_CONCURRENCY in flight. Differences absorbed: the
- * page totals live in a separate `page` object; the search is always fuzzy
- * and always evaluated at request time, so `fuzzySearch` and `validDate`
- * have no effect; `summary` and `targetAudiences` are not delivered by
- * either v8beta1 or the detail endpoint and stay absent. Never selected by
+ * per hit, at most DETAIL_CONCURRENCY in flight, which is why the page size
+ * is capped at MAX_PAGE_SIZE. Differences absorbed: the page totals live in
+ * a separate `page` object; `summary` and `targetAudiences` are not
+ * delivered by either v8beta1 or the detail endpoint and stay absent. Not
+ * absorbed but declared in `capabilities`: the search is always fuzzy and
+ * always evaluated at request time, so `fuzzySearch=false` and `validDate`
+ * are rejected by the facade instead of being dropped. Never selected by
  * default. Handbook: apps/api/docs/INTEGRATIONS.md, section 1.3.
  */
 @Injectable()
@@ -45,6 +48,18 @@ export class PvogV8BetaServiceSearchProvider
   private static readonly SEARCH_PATH = '/v8beta1/servicedescriptions';
 
   private static readonly DETAIL_CONCURRENCY = 8;
+
+  /**
+   * Every hit costs one detail call; this cap keeps one API request within
+   * 1 + MAX_PAGE_SIZE upstream calls.
+   */
+  private static readonly MAX_PAGE_SIZE = 50;
+
+  readonly capabilities: ServiceSearchCapabilities = {
+    maxPageSize: PvogV8BetaServiceSearchProvider.MAX_PAGE_SIZE,
+    supportsExactSearch: false,
+    supportsValidDate: false,
+  };
 
   constructor(
     executor: UpstreamRequestExecutor,

@@ -18,10 +18,12 @@ import { PvogAuthorityClient } from './pvog/PvogAuthorityClient';
 import { PvogRawClient } from './pvog/PvogRawClient';
 import { PvogSearchClient } from './pvog/PvogSearchClient';
 import { ServiceSearchOptions } from './pvog/model/ServiceSearchOptions';
+import { findUnsupportedServiceSearchOptions } from './pvog/serviceSearch/ServiceSearchCapabilities';
 import {
   SERVICE_SEARCH_PROVIDER,
   type ServiceSearchProvider,
 } from './pvog/serviceSearch/ServiceSearchProvider';
+import { UnsupportedServiceSearchOptionsException } from './pvog/serviceSearch/UnsupportedServiceSearchOptionsException';
 import { ServiceContextAssembler } from './ServiceContextAssembler';
 
 /**
@@ -155,12 +157,26 @@ export class GovDataFacade {
    * query plus a resolved regional key and returns matching services with all
    * description sections. Served by the service-search adapter configured
    * at startup; the result contract is the same for every upstream version.
+   * Options the configured adapter cannot honour (see its capabilities) are
+   * rejected with UnsupportedServiceSearchOptionsException before any
+   * upstream call instead of being dropped.
    */
   searchServices(
     regionalKey: string,
     query: string,
     options: ServiceSearchOptions,
   ): Promise<ServiceSearchResult> {
+    const problems = findUnsupportedServiceSearchOptions(
+      options,
+      this.serviceSearchProvider.capabilities,
+    );
+
+    if (problems.length > 0) {
+      return Promise.reject(
+        new UnsupportedServiceSearchOptionsException(problems),
+      );
+    }
+
     return this.serviceSearchProvider.searchServices(
       regionalKey,
       query,
