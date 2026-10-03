@@ -69,9 +69,6 @@ integrations API (NestJS)
 - **React inspection console** (`apps/ui`): a local developer tool for
   exercising the API and inspecting live upstream data.
 
-Runtime integration requests are deterministic and do not depend on LLM
-calls.
-
 ## The composed service context
 
 The endpoint that shows why this layer exists is
