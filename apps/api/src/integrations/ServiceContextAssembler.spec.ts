@@ -20,7 +20,7 @@ const SERVICE_PATH =
   '/suchdienst/api/v6/servicedescriptions/L100002.LB.1/detail';
 const UNIT_PATH = '/suchdienst/api/v5/organisationunits/detail';
 const ONLINE_SERVICES_PATH = '/suchdienst/api/v1beta2/onlineservices';
-const catalogPath = (key: string) => `/api/v0/leistung-steckbriefe/${key}`;
+const catalogPath = (key: string) => `/api/v1/leistung-steckbriefe/${key}`;
 const masterTextPath = (office: string, serviceId: string) =>
   `/api/v0/leistung-stammtexte/${office}/${serviceId}/primary/parsed-xzufi`;
 

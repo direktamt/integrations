@@ -241,9 +241,9 @@ export function buildUpstreamProbes(): UpstreamProbe[] {
     },
     {
       provider: 'FIM',
-      endpoint: 'GET /v0/leistung-steckbriefe',
+      endpoint: 'GET /v1/leistung-steckbriefe',
       handbookSection: '2.1',
-      url: url(fim, '/v0/leistung-steckbriefe', {
+      url: url(fim, '/v1/leistung-steckbriefe', {
         fts_query: 'Anmeldung',
         limit: '2',
       }),
@@ -255,13 +255,17 @@ export function buildUpstreamProbes(): UpstreamProbe[] {
         'items[].leistung_stammtexte',
         'items[].ozg',
         'items[].fts_match',
+        'items[].title_en',
+        'items[].leistungsbezeichnung_en',
+        'items[].leistungsbezeichnung_2_en',
+        'items[].rechtsgrundlagen_en',
       ],
     },
     {
       provider: 'FIM',
-      endpoint: 'GET /v0/leistung-steckbriefe/{leistungsschluessel}',
+      endpoint: 'GET /v1/leistung-steckbriefe/{leistungsschluessel}',
       handbookSection: '2.1',
-      url: url(fim, `/v0/leistung-steckbriefe/${LEIKA_KEY}`),
+      url: url(fim, `/v1/leistung-steckbriefe/${LEIKA_KEY}`),
       kind: ProbeKind.Wire,
       wireModel: WireCatalogEntry,
       knownUndeclaredFields: [
@@ -271,6 +275,10 @@ export function buildUpstreamProbes(): UpstreamProbe[] {
         'prozessklasse',
         'ozg',
         'replacements',
+        'title_en',
+        'leistungsbezeichnung_en',
+        'leistungsbezeichnung_2_en',
+        'rechtsgrundlagen_en',
       ],
     },
     {

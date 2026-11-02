@@ -31,7 +31,7 @@ export class FimPortalClient extends BaseHttpClient {
   ): Promise<CatalogSearchResult> {
     const wire = await this.getModel(
       WireCatalogSearchResponse,
-      '/v0/leistung-steckbriefe',
+      '/v1/leistung-steckbriefe',
       {
         fts_query: term,
         limit,
@@ -53,7 +53,7 @@ export class FimPortalClient extends BaseHttpClient {
   async getCatalogEntry(serviceCatalogKey: string): Promise<CatalogEntry> {
     const wire = await this.getModel(
       WireCatalogEntry,
-      `/v0/leistung-steckbriefe/${encodeURIComponent(serviceCatalogKey)}`,
+      `/v1/leistung-steckbriefe/${encodeURIComponent(serviceCatalogKey)}`,
       undefined,
       { cacheable: true },
     );

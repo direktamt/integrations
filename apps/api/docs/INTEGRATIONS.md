@@ -747,8 +747,8 @@ stay close to the German terms of the underlying standards.
 ### 2.1 LeiKa service catalog ✅ (implemented)
 
 ```
-GET /v0/leistung-steckbriefe?fts_query={term}&limit={1..200}&offset={n}
-GET /v0/leistung-steckbriefe/{leistungsschluessel}
+GET /v1/leistung-steckbriefe?fts_query={term}&limit={1..200}&offset={n}
+GET /v1/leistung-steckbriefe/{leistungsschluessel}
 ```
 
 Full-text search uses `fts_query`. A `search` parameter is not defined by the
@@ -762,7 +762,7 @@ locally and answers 400 before calling upstream.
 Request:
 
 ```
-GET https://fimportal.de/api/v0/leistung-steckbriefe?fts_query=Anmeldung&limit=2
+GET https://fimportal.de/api/v1/leistung-steckbriefe?fts_query=Anmeldung&limit=2
 ```
 
 Response (trimmed):
@@ -775,6 +775,7 @@ Response (trimmed):
       "redaktion_id": "B100019",
       "leistung_id": "...",
       "title": "Bestattung Anmeldung Tuchbestattung",
+      "title_en": "Funeral Registration: Shroud Burial",
       "leistungsbezeichnung": "...",
       "leistungsbezeichnung_2": null,
       "freigabe_status": 6,
@@ -805,18 +806,24 @@ across sources; PVOG exposes the same keys as `leikakeys`.
 Wire models: `WireCatalogSearchResponse`, `WireCatalogEntry`.
 Used by `GET /catalog`, `GET /catalog/{serviceCatalogKey}` and, per LeiKa key of a service, `GET /services/{id}/context`.
 
-A `/v1/leistung-steckbriefe` endpoint with the same parameters exists ✅;
-`v0` is not marked deprecated. Watch item.
+`v1` carries English variants of the text fields (`title_en`,
+`leistungsbezeichnung_en`, `leistungsbezeichnung_2_en`,
+`rechtsgrundlagen_en`), not consumed by the wire model. The former
+`/v0/leistung-steckbriefe` routes were removed without a deprecation period
+and answer 404 `{"detail": "unknown route"}` (first observed 2026-10-19).
 
 ### 2.2 Federal master texts (Stammtexte)
 
 ```
-GET /v0/leistung-stammtexte?limit=&offset=                                       # list ✅ (reference)
-GET /v0/leistung-stammtexte/{redaktion_id}/{leistung_id}/{source}                # metadata ✅ (reference)
-GET /v0/leistung-stammtexte/{redaktion_id}/{leistung_id}/{source}/xzufi          # raw XZuFi XML (reference)
+GET /v1/leistung-stammtexte?limit=&offset=                                       # list ✅ (reference)
+GET /v1/leistung-stammtexte/{redaktion_id}/{leistung_id}/{source}                # metadata ✅ (reference)
+GET /v1/leistung-stammtexte/{redaktion_id}/{leistung_id}/{source}/xzufi          # raw XZuFi XML (reference)
 GET /v0/leistung-stammtexte/{redaktion_id}/{leistung_id}/{source}/parsed-xzufi   # parsed JSON ✅ (implemented)
-GET /v0/leistung-stammtexte/{redaktion_id}/{leistung_id}/{source}/{lang}/pdf     # rendered PDF (reference)
+GET /v1/leistung-stammtexte/{redaktion_id}/{leistung_id}/{source}/{lang}/pdf     # rendered PDF (reference)
 ```
+
+`parsed-xzufi` exists only under `v0`; the other master-text routes moved to
+`v1`, and their `v0` paths answer 404.
 
 `redaktion_id` and `leistung_id` come from a catalog entry; `source` is
 usually `primary`. Live example used for verification:
@@ -1001,6 +1008,12 @@ checklist for coding agents.
   endpoint does not publish the field (detail endpoint, v8beta1 search) and
   an empty list only when the authority published none; consumers no
   longer read "none" where the source said nothing.
+- **2026-11-02** (FIM catalog): `/v0/leistung-steckbriefe` removed upstream
+  (404 since 2026-10-19, flagged BREAKING by the weekly drift run). The
+  catalog client and drift probes moved to `/v1/leistung-steckbriefe`,
+  verified live: same parameters and envelope, wire models valid, only the
+  `_en` text fields are new. Master-text list and metadata verified under
+  `v1`; `parsed-xzufi` still answers under `v0` only.
 - **2026-09-30** (responsible authorities): `/v5/organisationunits/detail`
   moved from the auxiliary list to implemented (1.5), requested by `q` only;
   `organisations[]` of the service detail (1.4) is now consumed. Code lists

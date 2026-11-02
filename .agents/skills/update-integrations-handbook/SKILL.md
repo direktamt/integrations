@@ -59,5 +59,6 @@ Never mark an endpoint ✅ that was not exercised in this run.
   release notes: <https://produktportal.pvog.fitko.de/release-notes/>.
 - The legacy API host `pvog.fitko.de` is switched off; only `pvog.fitko.net`
   serves the Suchdienst API.
-- FIM: `/v1/leistung-steckbriefe` exists next to `/v0`; `parsed-xzufi` is
-  declared unstable by the operator.
+- FIM: `/v0/leistung-steckbriefe` was removed without notice in October
+  2026, the catalog lives under `/v1`; `parsed-xzufi` answers only under
+  `/v0` and is declared unstable by the operator.

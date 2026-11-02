@@ -66,7 +66,7 @@ describe('FimPortalClient', () => {
     const result = await client.searchCatalog('Anmeldung');
 
     const url = fetchStub.lastUrl();
-    expect(url.pathname).toBe('/api/v0/leistung-steckbriefe');
+    expect(url.pathname).toBe('/api/v1/leistung-steckbriefe');
     expect(url.searchParams.get('fts_query')).toBe('Anmeldung');
     expect(url.searchParams.get('limit')).toBe('20');
     expect(url.searchParams.get('offset')).toBe('0');
@@ -85,7 +85,7 @@ describe('FimPortalClient', () => {
     const entry = await client.getCatalogEntry('99101002104007');
 
     expect(fetchStub.lastUrl().pathname).toBe(
-      '/api/v0/leistung-steckbriefe/99101002104007',
+      '/api/v1/leistung-steckbriefe/99101002104007',
     );
     expect(entry).toEqual(EXPECTED_ENTRY);
   });
