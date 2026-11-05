@@ -1,9 +1,11 @@
+import { CodeBlock } from '@direktamt/ui-kit';
+import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Box,
+  Stack,
   Typography,
 } from '@mui/material';
 
@@ -22,25 +24,20 @@ export function JsonViewer({
   defaultExpanded = false,
 }: JsonViewerProps) {
   return (
-    <Accordion variant="outlined" defaultExpanded={defaultExpanded}>
+    <Accordion defaultExpanded={defaultExpanded}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography variant="body2">{title}</Typography>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <DataObjectOutlinedIcon
+            fontSize="small"
+            sx={{ color: 'text.secondary' }}
+          />
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {title}
+          </Typography>
+        </Stack>
       </AccordionSummary>
       <AccordionDetails>
-        <Box
-          component="pre"
-          sx={{
-            m: 0,
-            p: 1.5,
-            bgcolor: 'grey.100',
-            borderRadius: 1,
-            fontSize: 12,
-            overflow: 'auto',
-            maxHeight: 480,
-          }}
-        >
-          {JSON.stringify(data, null, 2)}
-        </Box>
+        <CodeBlock label={title}>{JSON.stringify(data, null, 2)}</CodeBlock>
       </AccordionDetails>
     </Accordion>
   );

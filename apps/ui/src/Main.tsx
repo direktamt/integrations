@@ -1,4 +1,5 @@
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { DirektAmtThemeProvider } from '@direktamt/ui-kit';
+import '@direktamt/ui-kit/fonts';
 import {
   QueryCache,
   QueryClient,
@@ -9,9 +10,11 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { ApiError } from './api/ApiError';
 import { App } from './App';
+import { RouterLinkBehavior } from './components/RouterLinkBehavior';
 import { showErrorSnackbar } from './components/ErrorSnackbar';
+import { applyFavicon } from './Favicon';
 
-const theme = createTheme();
+applyFavicon();
 
 /**
  * Global error routing: 400 and 404 are handled inline by
@@ -46,13 +49,12 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <DirektAmtThemeProvider linkComponent={RouterLinkBehavior}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <App />
         </BrowserRouter>
       </QueryClientProvider>
-    </ThemeProvider>
+    </DirektAmtThemeProvider>
   </StrictMode>,
 );

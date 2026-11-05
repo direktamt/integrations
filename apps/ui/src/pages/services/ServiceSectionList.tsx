@@ -25,7 +25,7 @@ interface ServiceSectionListProps {
 export function ServiceSectionList({ sections }: ServiceSectionListProps) {
   if (sections.length === 0) {
     return (
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         This description has no sections.
       </Typography>
     );
@@ -34,25 +34,32 @@ export function ServiceSectionList({ sections }: ServiceSectionListProps) {
   return (
     <div>
       {sections.map((section, index) => (
-        <Accordion key={index} variant="outlined">
+        <Accordion key={index}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={1.5}
+              useFlexGap
+              sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}
+            >
+              {section.originalTitle && (
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {section.originalTitle}
+                </Typography>
+              )}
               <Chip
                 label={section.type}
                 size="small"
                 color="primary"
                 variant="outlined"
               />
-              {section.originalTitle && (
-                <Typography variant="body2">{section.originalTitle}</Typography>
-              )}
             </Stack>
           </AccordionSummary>
           <AccordionDetails>
             {section.htmlText ? (
               <HtmlSection html={section.htmlText} />
             ) : (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 No text content.
               </Typography>
             )}

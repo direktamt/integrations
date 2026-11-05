@@ -1,3 +1,4 @@
+import { PageHeader, SectionCard } from '@direktamt/ui-kit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
   ServiceContextPart,
@@ -6,7 +7,7 @@ import {
 } from '@direktamt/integrations-contracts';
 import {
   Alert,
-  Box,
+  AlertTitle,
   Button,
   Chip,
   Link,
@@ -23,10 +24,10 @@ import {
 import { useServiceContext } from '../../api/queries/useServiceQueries';
 import { AuthorityCardList } from '../../components/AuthorityCardList';
 import { DataTable } from '../../components/DataTable';
+import { EndpointList } from '../../components/EndpointList';
 import { JsonViewer } from '../../components/JsonViewer';
 import { KeyChip } from '../../components/KeyChip';
 import { OnlineServiceTable } from '../../components/OnlineServiceTable';
-import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { parseDefaultTrueBoolean } from './DefaultTrueBoolean';
 import { ServiceMetadataList } from './ServiceMetadataList';
@@ -53,17 +54,26 @@ export function ServiceContextPage() {
   return (
     <>
       <PageHeader
-        title="Service context"
-        description={`GET /services/${id}/context`}
+        overline="Composed service context"
+        title={
+          contextQuery.data
+            ? deriveServiceTitle(contextQuery.data.service)
+            : 'Service context'
+        }
+        description="Everything the integration layer composes for one service in a territory: PVOG service, authorities and online services, FIM catalog entries and master texts."
         actions={
           <Button
+            variant="outlined"
+            color="inherit"
             startIcon={<ArrowBackIcon />}
             onClick={() => void navigate(-1)}
           >
             Back
           </Button>
         }
-      />
+      >
+        <EndpointList paths={[`/services/${id}/context`]} />
+      </PageHeader>
       <QueryStateGate
         query={contextQuery}
         idleMessage="A regionalKey URL parameter is required to load this context."
@@ -72,11 +82,16 @@ export function ServiceContextPage() {
           <Stack spacing={3}>
             <ContextStatus context={context} />
             <ContextSection title="Service">
-              <Stack spacing={1} alignItems="flex-start">
-                <Typography variant="h6">
+              <Stack spacing={2} sx={{ alignItems: 'flex-start' }}>
+                <Typography variant="h6" component="p">
                   {deriveServiceTitle(context.service)}
                 </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  sx={{ flexWrap: 'wrap' }}
+                >
                   {context.service.serviceCatalogKeys.map((key) => (
                     <KeyChip key={key} value={key} />
                   ))}
@@ -156,7 +171,7 @@ export function ServiceContextPage() {
               context={context}
               isEmpty={context.masterTexts.length === 0}
             >
-              <Stack spacing={1}>
+              <Stack spacing={0}>
                 {context.masterTexts.map((text, index) => (
                   <JsonViewer
                     key={index}
@@ -186,13 +201,28 @@ function ContextStatus({ context }: ContextStatusProps) {
   const { complete, unavailableParts } = context.status;
 
   return complete ? (
-    <Alert severity="success">All parts loaded.</Alert>
+    <Alert severity="success">
+      <AlertTitle>Complete</AlertTitle>
+      All parts loaded.
+    </Alert>
   ) : (
     <Alert severity="warning">
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+      <AlertTitle>Partially loaded</AlertTitle>
+      <Stack
+        direction="row"
+        spacing={1}
+        useFlexGap
+        sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+      >
         <span>Unavailable parts (returned empty):</span>
         {unavailableParts.map((part) => (
-          <Chip key={part} label={part} size="small" color="warning" />
+          <Chip
+            key={part}
+            label={part}
+            size="small"
+            color="warning"
+            variant="outlined"
+          />
         ))}
       </Stack>
     </Alert>
@@ -227,21 +257,18 @@ function ContextSection({
     context.status.unavailableParts.includes(part);
 
   return (
-    <Box>
-      <Typography variant="subtitle1" gutterBottom>
-        {title}
-      </Typography>
+    <SectionCard title={title}>
       {unavailable ? (
         <Alert severity="warning">
           Not loaded: the upstream source of this part is unavailable.
         </Alert>
       ) : isEmpty ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           None
         </Typography>
       ) : (
         children
       )}
-    </Box>
+    </SectionCard>
   );
 }

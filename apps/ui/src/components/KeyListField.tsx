@@ -36,16 +36,16 @@ export function KeyListField({
       options={[]}
       value={value}
       onChange={(_, newValue) => commit(newValue)}
-      renderTags={(tags, getTagProps) =>
+      renderValue={(tags, getItemProps) =>
         tags.map((tag, index) => {
-          const { key, ...tagProps } = getTagProps({ index });
+          const { key, ...itemProps } = getItemProps({ index });
           return (
             <Chip
               key={key}
               label={tag}
               size="small"
               sx={{ fontFamily: 'monospace' }}
-              {...tagProps}
+              {...itemProps}
             />
           );
         })

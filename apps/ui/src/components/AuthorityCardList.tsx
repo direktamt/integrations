@@ -5,18 +5,7 @@ import {
   type AuthorityRole,
   type PublicAuthority,
 } from '@direktamt/integrations-contracts';
-import {
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  Link,
-  List,
-  ListItem,
-  ListItemText,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Chip, Link, Paper, Stack, Typography } from '@mui/material';
 import { ReactNode } from 'react';
 import { KeyChip } from './KeyChip';
 
@@ -41,81 +30,99 @@ export function AuthorityCardList({ items }: AuthorityCardListProps) {
   return (
     <Stack spacing={2}>
       {items.map(({ authority, roles }) => (
-        <Card key={authority.id} variant="outlined">
-          <CardContent>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              flexWrap="wrap"
-              useFlexGap
-            >
-              <Typography variant="subtitle1">
+        <Paper
+          key={authority.id}
+          variant="outlined"
+          sx={{ borderRadius: 3, padding: { xs: 2, sm: 2.5 } }}
+        >
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: { sm: 'flex-start' },
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6" component="h3">
                 {authority.name ?? '(unnamed)'}
               </Typography>
-              {roles.map((role) => (
-                <Chip
-                  key={role}
-                  label={role}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-              ))}
-              <KeyChip value={authority.id} />
-            </Stack>
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{ flexWrap: 'wrap', marginTop: 1 }}
+              >
+                {roles.map((role) => (
+                  <Chip
+                    key={role}
+                    label={role}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                ))}
+              </Stack>
+            </Box>
+            <KeyChip value={authority.id} />
+          </Stack>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'repeat(3, minmax(0, 1fr))',
+              },
+              gap: { xs: 2, md: 3 },
+              marginTop: 2.5,
+              paddingTop: 2,
+              borderTop: '1px solid',
+              borderColor: 'border.subtle',
+            }}
+          >
             <AuthorityDetailBlock
               title="Addresses"
               empty={!authority.addresses.length}
             >
-              <List dense disablePadding>
-                {authority.addresses.map((address, index) => (
-                  <ListItem key={index} disablePadding>
-                    <ListItemText
-                      primary={formatAddress(address)}
-                      secondary={address.type}
-                    />
-                  </ListItem>
-                ))}
-              </List>
+              {authority.addresses.map((address, index) => (
+                <DetailEntry
+                  key={index}
+                  primary={formatAddress(address)}
+                  secondary={address.type}
+                />
+              ))}
             </AuthorityDetailBlock>
             <AuthorityDetailBlock
               title="Contacts"
               empty={!authority.contacts.length}
             >
-              <List dense disablePadding>
-                {authority.contacts.map((contact, index) => (
-                  <ListItem key={index} disablePadding>
-                    <ListItemText
-                      primary={renderContactValue(contact)}
-                      secondary={[
-                        contact.type,
-                        contact.label,
-                        contact.description,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    />
-                  </ListItem>
-                ))}
-              </List>
+              {authority.contacts.map((contact, index) => (
+                <DetailEntry
+                  key={index}
+                  primary={renderContactValue(contact)}
+                  secondary={[contact.type, contact.label, contact.description]
+                    .filter(Boolean)
+                    .join(' · ')}
+                />
+              ))}
             </AuthorityDetailBlock>
             <AuthorityDetailBlock
               title="Websites"
               empty={!authority.websites.length}
             >
-              <List dense disablePadding>
-                {authority.websites.map((url) => (
-                  <ListItem key={url} disablePadding>
+              {authority.websites.map((url) => (
+                <DetailEntry
+                  key={url}
+                  primary={
                     <Link href={url} target="_blank" rel="noreferrer">
                       {url}
                     </Link>
-                  </ListItem>
-                ))}
-              </List>
+                  }
+                />
+              ))}
             </AuthorityDetailBlock>
-          </CardContent>
-        </Card>
+          </Box>
+        </Paper>
       ))}
     </Stack>
   );
@@ -133,16 +140,44 @@ function AuthorityDetailBlock({
   children,
 }: AuthorityDetailBlockProps) {
   return (
-    <Box sx={{ mt: 1.5 }}>
-      <Typography variant="subtitle2" gutterBottom>
+    <Box sx={{ minWidth: 0 }}>
+      <Typography
+        variant="overline"
+        component="h4"
+        sx={{ color: 'text.secondary', marginBottom: 0.5 }}
+      >
         {title}
       </Typography>
       {empty ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           None
         </Typography>
       ) : (
-        children
+        <Stack spacing={1}>{children}</Stack>
+      )}
+    </Box>
+  );
+}
+
+interface DetailEntryProps {
+  primary: ReactNode;
+  secondary?: string;
+}
+
+function DetailEntry({ primary, secondary }: DetailEntryProps) {
+  return (
+    <Box sx={{ overflowWrap: 'anywhere' }}>
+      <Typography variant="body2" component="div">
+        {primary}
+      </Typography>
+      {secondary && (
+        <Typography
+          variant="caption"
+          component="div"
+          sx={{ color: 'text.secondary' }}
+        >
+          {secondary}
+        </Typography>
       )}
     </Box>
   );

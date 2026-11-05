@@ -11,16 +11,19 @@ interface IntegrationsApiErrorBody {
 }
 
 /**
+ * Integrations API base URL: `VITE_API_BASE_URL`, else the local default.
+ */
+export const API_BASE_URL: string =
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+
+/**
  * Typed axios wrapper: base URL from VITE_API_BASE_URL, JSON only,
  * all failures normalized into ApiError.
  */
 export class ApiClient {
   private readonly http: AxiosInstance;
 
-  constructor(
-    baseUrl: string = import.meta.env.VITE_API_BASE_URL ??
-      'http://localhost:3000',
-  ) {
+  constructor(baseUrl: string = API_BASE_URL) {
     this.http = axios.create({
       baseURL: baseUrl,
       headers: { Accept: 'application/json' },

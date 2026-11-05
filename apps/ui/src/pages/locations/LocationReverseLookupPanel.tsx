@@ -1,14 +1,10 @@
-import {
-  Button,
-  Card,
-  CardContent,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { SectionCard } from '@direktamt/ui-kit';
+import { Box, Button, TextField } from '@mui/material';
 import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useLocation } from '../../api/queries/useLocationQueries';
+import { EndpointChip } from '../../components/EndpointChip';
+import { FormRow } from '../../components/FormRow';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { LocationResultTable } from './LocationResultTable';
 
@@ -43,39 +39,33 @@ export function LocationReverseLookupPanel() {
   };
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Reverse lookup
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          GET /locations/&#123;regionalKey&#125; — resolve a regional key back
-          to its territory.
-        </Typography>
-        <form onSubmit={submit}>
-          <Stack direction="row" spacing={2} sx={{ my: 1 }}>
-            <TextField
-              label="Regional key"
-              size="small"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              sx={{ alignSelf: 'flex-start' }}
-            >
-              Look up
-            </Button>
-          </Stack>
-        </form>
+    <SectionCard
+      title="Reverse lookup"
+      description="Resolve a regional key back to its territory."
+      actions={<EndpointChip path="/locations/{regionalKey}" />}
+    >
+      <form onSubmit={submit}>
+        <FormRow>
+          <TextField
+            label="Regional key"
+            size="small"
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+          />
+          <Button type="submit" variant="contained">
+            Look up
+          </Button>
+        </FormRow>
+      </form>
+      <Box sx={{ mt: 2.5 }}>
         <QueryStateGate
           query={locationQuery}
           idleMessage="Submit a regional key."
+          dense
         >
           {(location) => <LocationResultTable locations={[location]} />}
         </QueryStateGate>
-      </CardContent>
-    </Card>
+      </Box>
+    </SectionCard>
   );
 }
