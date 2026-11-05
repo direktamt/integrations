@@ -40,21 +40,6 @@ integrations API endpoints the page calls. The header links to the API's
 Swagger UI (`/docs`), and the navigation footer shows the configured API
 base URL.
 
-Until `@direktamt/ui-kit` is available on npm, install a local build of the
-kit without recording it in the lockfile, from the kit's checkout:
-
-```bash
-npm pack --pack-destination /tmp
-```
-
-and then in this repository (temporarily remove the `@direktamt/ui-kit`
-entry from `apps/ui/package.json` first, so that npm does not look it up in
-the registry, and restore it afterwards):
-
-```bash
-npm install --no-save /tmp/direktamt-ui-kit-0.1.0.tgz -w @direktamt/integrations-ui
-```
-
 ## Getting started
 
 Install dependencies and start both applications from the repository root:
