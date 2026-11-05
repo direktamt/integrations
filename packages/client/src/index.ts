@@ -28,6 +28,7 @@ export type { GetRawOnlineServiceRequest } from './request/GetRawOnlineServiceRe
 export type { GetRawServiceRequest } from './request/GetRawServiceRequest.js';
 export type { GetServiceContextRequest } from './request/GetServiceContextRequest.js';
 export type { GetServiceRequest } from './request/GetServiceRequest.js';
+export type { ListCatalogEntryServicesRequest } from './request/ListCatalogEntryServicesRequest.js';
 export type { ListOnlineServiceAuthoritiesRequest } from './request/ListOnlineServiceAuthoritiesRequest.js';
 export type { ListOnlineServicesRequest } from './request/ListOnlineServicesRequest.js';
 export type { ListServiceAuthoritiesRequest } from './request/ListServiceAuthoritiesRequest.js';

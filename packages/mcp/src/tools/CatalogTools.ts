@@ -3,7 +3,8 @@ import { defineTool, type ToolDefinition } from './ToolDefinition.js';
 import { ToolInputFields } from './ToolInputFields.js';
 
 /**
- * The federal LeiKa service catalog and its master texts (FIM).
+ * The federal LeiKa service catalog and its master texts (FIM), and the
+ * service descriptions a territory publishes for a catalog key (PVOG).
  */
 export const CATALOG_TOOLS: readonly ToolDefinition[] = [
   defineTool({
@@ -44,6 +45,20 @@ export const CATALOG_TOOLS: readonly ToolDefinition[] = [
       serviceCatalogKey: ToolInputFields.serviceCatalogKey(),
     }),
     invoke: (client, input, options) => client.catalog.get(input, options),
+  }),
+
+  defineTool({
+    name: 'listCatalogEntryServices',
+    title: 'List the service descriptions of a territory for a catalog key',
+    endpoint: 'GET /catalog/{serviceCatalogKey}/services',
+    description:
+      "Finds the place's published service descriptions for a federal service catalog key; use after picking the service in the federal catalog (searchCatalog, getCatalogEntry). Returns a list of entries, each with matchType and the full service description (id, serviceCatalogKeys, title, summary, regionalKeys of the publishing territory, content sections). matchType EXACT: the description carries the requested key. HIERARCHY: the territory publishes nothing under the exact key, so the official search fell back to more specific keys (refined variants, for example main or secondary residence; choose the one that fits) or, when none exist, to more general ones; compare the serviceCatalogKeys. An empty list means the territory publishes nothing for the key. The regionalKey comes from resolveLocation; pass a returned id with the same regionalKey to getServiceContext.",
+    inputSchema: z.strictObject({
+      serviceCatalogKey: ToolInputFields.serviceCatalogKey(),
+      regionalKey: ToolInputFields.regionalKey(),
+    }),
+    invoke: (client, input, options) =>
+      client.catalog.listServices(input, options),
   }),
 
   defineTool({

@@ -77,7 +77,7 @@ src/
     common/UrlSanitizer.ts           # strips query values from URLs before they reach logs
     common/exceptions/               # IntegrationException hierarchy
     pvog/                            # PVOG Suchdienst adapter
-      PvogSearchClient.ts            # locations, service detail, online services
+      PvogSearchClient.ts            # locations, service detail, services by LeiKa key, online services
       ServiceDescriptionMapper.ts    # shared wire → PublicServiceDescription mapping
       serviceSearch/                 # versioned service-search adapters behind one interface
         ServiceSearchProvider.ts     #   interface + injection token
@@ -118,6 +118,13 @@ unstable.
 (same `ars` and `leikaIds` filters on every page, repeated tokens and runaway
 page counts rejected as contract violations) and returns the complete set;
 the public contract stays `OnlineService[]`.
+
+`GET /catalog/{serviceCatalogKey}/services` is one PVOG resource, the LeiKa
+hierarchy search: exact-key descriptions of the territory when there are
+any, otherwise descriptions with more specific keys, otherwise with more
+general ones; parent territories are included. Every entry carries the
+upstream's page-level exact flag as `EXACT` or `HIERARCHY`
+(`CatalogEntryService`). All pages are collected; the result is not cached.
 
 `GET /services/{id}/authorities` composes two PVOG resources inside
 `PvogAuthorityClient`: the service detail names the responsible organisation
@@ -261,10 +268,11 @@ of the table below, never breaker state or attempt counts.
 
 ## Request validation
 
-Query DTOs in `api/request/` validate the documented upstream limits locally
-so that invalid input is answered with 400 before any upstream call: service
-search `size` 5–9999 and `page` 0–100, catalog `limit` 1–200, plus the
-required-field and type rules. Remaining upstream 4xx responses other than
+Query and path DTOs in `api/request/` validate the documented upstream
+limits locally so that invalid input is answered with 400 before any
+upstream call: service search `size` 5–9999 and `page` 0–100, catalog
+`limit` 1–200, a 14-digit `serviceCatalogKey` and a 12-digit `regionalKey`
+for the catalog key's services, plus the required-field and type rules. Remaining upstream 4xx responses other than
 404 are mapped to 502 because, once the known limits are checked here, they
 indicate a contract problem rather than user input. Limits that depend on
 the configured service-search adapter (`ServiceSearchCapabilities`: page

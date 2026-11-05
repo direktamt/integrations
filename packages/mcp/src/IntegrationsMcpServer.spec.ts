@@ -117,6 +117,12 @@ describe('IntegrationsMcpServer', () => {
       '',
     ],
     [
+      'listCatalogEntryServices',
+      { serviceCatalogKey: '99115005104000', regionalKey: BONN },
+      '/catalog/99115005104000/services',
+      `regionalKey=${BONN}`,
+    ],
+    [
       'getMasterText',
       { editorialOfficeId: 'B100019', serviceId: '582787', source: 'primary' },
       '/master-texts/B100019/582787',
@@ -142,7 +148,7 @@ describe('IntegrationsMcpServer', () => {
 
   it('has a mapping test for every tool', () => {
     // Keeps the table above complete when a tool is added.
-    expect(TOOL_CATALOG).toHaveLength(12);
+    expect(TOOL_CATALOG).toHaveLength(13);
   });
 
   it('maps an API 404 to a notFound tool error', async () => {

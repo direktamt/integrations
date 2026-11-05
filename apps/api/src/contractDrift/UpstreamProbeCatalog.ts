@@ -8,6 +8,7 @@ import { WireLocationDetails } from '../integrations/pvog/wire/WireLocationDetai
 import { WireLocationSuggestion } from '../integrations/pvog/wire/WireLocationSuggestion';
 import { WireOnlineServiceAuthoritiesResponse } from '../integrations/pvog/wire/WireOnlineServiceAuthoritiesResponse';
 import { WireOnlineServicesResponse } from '../integrations/pvog/wire/WireOnlineServicesResponse';
+import { WireServiceCatalogHierarchyPage } from '../integrations/pvog/wire/WireServiceCatalogHierarchyPage';
 import { WireServiceDescription } from '../integrations/pvog/wire/WireServiceDescription';
 import { ProbeKind, UpstreamProbe } from './UpstreamProbe';
 
@@ -219,6 +220,44 @@ export function buildUpstreamProbes(): UpstreamProbe[] {
         'organisations[].roles[].lbId',
         'organisations[].roles[].leikakeys',
         'organisations[].roles[].ars',
+      ],
+    },
+    {
+      provider: 'PVOG',
+      endpoint: 'GET /v2/servicedescriptions/leikahierarchy',
+      handbookSection: '1.9',
+      url: url(pvog, '/v2/servicedescriptions/leikahierarchy', {
+        leikaIds: LEIKA_KEY,
+        ars: KOELN_ARS,
+        size: '5',
+      }),
+      kind: ProbeKind.Wire,
+      wireModel: WireServiceCatalogHierarchyPage,
+      knownUndeclaredFields: [
+        'content[].details[].additionalInformation',
+        'content[].details[].replace',
+        'content[].details[].validityPeriods',
+        'content[].externalLastUpdate',
+        'content[].languageCode',
+        'content[].languageComplete',
+        'content[].lastUpdate',
+        'content[].onlineServiceLinks',
+        'content[].organisationIds',
+        'content[].sdgInformation',
+        'content[].sourcePortals',
+        'content[].suggest',
+        'content[].synonyms',
+        'content[].teaser',
+        'content[].timestamp',
+        'content[].typing',
+        'content[].validFrom',
+        'content[].validTo',
+        'content[].validityPeriods',
+        'empty',
+        'first',
+        'last',
+        'numberOfElements',
+        'pageable',
       ],
     },
     {

@@ -1,5 +1,6 @@
 import type {
   CatalogEntry,
+  CatalogEntryService,
   CatalogSearchResult,
   Location,
   LocationSuggestion,
@@ -232,6 +233,22 @@ export class GovDataFacade {
    */
   getCatalogEntry(serviceCatalogKey: string): Promise<CatalogEntry> {
     return this.fimPortalClient.getCatalogEntry(serviceCatalogKey);
+  }
+
+  /**
+   * Service descriptions a territory publishes for a federal catalog key:
+   * those with the exact key, otherwise those with a related key of the
+   * catalog hierarchy, each marked with its match type. Empty when the
+   * territory publishes nothing for the key or its relatives.
+   */
+  listCatalogEntryServices(
+    serviceCatalogKey: string,
+    regionalKey: string,
+  ): Promise<CatalogEntryService[]> {
+    return this.pvogSearchClient.listCatalogEntryServices(
+      serviceCatalogKey,
+      regionalKey,
+    );
   }
 
   /**

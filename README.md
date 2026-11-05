@@ -56,7 +56,7 @@ integrations API (NestJS)
   and class-validator); the FIM master-text pass-through is the documented
   exception.
 - **Request validation**: documented upstream limits (page size, page index,
-  catalog limit) are validated locally, so invalid input is answered with 400
+  catalog limit, key formats) are validated locally, so invalid input is answered with 400
   before any upstream call.
 - **Stable English domain contracts**: the API speaks English identifiers
   only; German appears in upstream query names, URL paths and data content.
@@ -141,24 +141,25 @@ are documented in the handbook:
 
 ## Current capabilities
 
-The integrations API exposes twelve normalized read-only endpoints and two raw provider endpoints:
+The integrations API exposes thirteen normalized read-only endpoints and two raw provider endpoints:
 
-| Endpoint                                            | Upstream        | Purpose                                                                                                           |
-| --------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `GET /locations/suggestions?query=`                 | PVOG Suchdienst | Autocomplete for city, district or postal code                                                                    |
-| `GET /locations?cityName=&postalCode=`              | PVOG Suchdienst | Resolve a city name or postal code to territories                                                                 |
-| `GET /locations/{regionalKey}`                      | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                                                                            |
-| `GET /services?regionalKey=&query=`                 | PVOG Suchdienst | Plain-language service search within a territory                                                                  |
-| `GET /services/{id}?regionalKey=`                   | PVOG Suchdienst | One service description with all content sections and publication metadata                                        |
-| `GET /services/{id}/authorities?regionalKey=`       | PVOG Suchdienst | Authorities responsible for the service, with their role, addresses and contacts                                  |
-| `GET /services/{id}/context?regionalKey=`           | PVOG + FIM      | Composed context of one service: description, authorities, online services, catalog entries, master texts, status |
-| `GET /online-services?regionalKey=`                 | PVOG Suchdienst | Online-application links for a territory (all upstream pages are collected)                                       |
-| `GET /online-services/{id}/authorities`             | PVOG Suchdienst | Authorities responsible for an online service, with their roles and contacts                                      |
-| `GET /catalog?term=`                                | FIM Portal      | Full-text search over the LeiKa service catalog                                                                   |
-| `GET /catalog/{serviceCatalogKey}`                  | FIM Portal      | One catalog entry                                                                                                 |
-| `GET /master-texts/{editorialOfficeId}/{serviceId}` | FIM Portal      | Parsed federal master text (unvalidated pass-through)                                                             |
-| `GET /raw/pvog/services/{id}/jzufi-2-3`             | PVOG Suchdienst | Raw JZuFi 2.3 body of a service description (provider contract)                                                   |
-| `GET /raw/pvog/online-services/{id}/jzufi-2-3`      | PVOG Suchdienst | Raw JZuFi 2.3 body of an online service (provider contract)                                                       |
+| Endpoint                                                 | Upstream        | Purpose                                                                                                           |
+| -------------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `GET /locations/suggestions?query=`                      | PVOG Suchdienst | Autocomplete for city, district or postal code                                                                    |
+| `GET /locations?cityName=&postalCode=`                   | PVOG Suchdienst | Resolve a city name or postal code to territories                                                                 |
+| `GET /locations/{regionalKey}`                           | PVOG Suchdienst | Reverse lookup of a regional key (ARS)                                                                            |
+| `GET /services?regionalKey=&query=`                      | PVOG Suchdienst | Plain-language service search within a territory                                                                  |
+| `GET /services/{id}?regionalKey=`                        | PVOG Suchdienst | One service description with all content sections and publication metadata                                        |
+| `GET /services/{id}/authorities?regionalKey=`            | PVOG Suchdienst | Authorities responsible for the service, with their role, addresses and contacts                                  |
+| `GET /services/{id}/context?regionalKey=`                | PVOG + FIM      | Composed context of one service: description, authorities, online services, catalog entries, master texts, status |
+| `GET /online-services?regionalKey=`                      | PVOG Suchdienst | Online-application links for a territory (all upstream pages are collected)                                       |
+| `GET /online-services/{id}/authorities`                  | PVOG Suchdienst | Authorities responsible for an online service, with their roles and contacts                                      |
+| `GET /catalog?term=`                                     | FIM Portal      | Full-text search over the LeiKa service catalog                                                                   |
+| `GET /catalog/{serviceCatalogKey}`                       | FIM Portal      | One catalog entry                                                                                                 |
+| `GET /catalog/{serviceCatalogKey}/services?regionalKey=` | PVOG Suchdienst | Service descriptions a territory publishes for a LeiKa key, exact or via the LeiKa hierarchy                      |
+| `GET /master-texts/{editorialOfficeId}/{serviceId}`      | FIM Portal      | Parsed federal master text (unvalidated pass-through)                                                             |
+| `GET /raw/pvog/services/{id}/jzufi-2-3`                  | PVOG Suchdienst | Raw JZuFi 2.3 body of a service description (provider contract)                                                   |
+| `GET /raw/pvog/online-services/{id}/jzufi-2-3`           | PVOG Suchdienst | Raw JZuFi 2.3 body of an online service (provider contract)                                                       |
 
 The API serves an OpenAPI document and Swagger UI at `/docs`.
 

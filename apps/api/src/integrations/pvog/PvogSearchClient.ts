@@ -1,7 +1,9 @@
-import type {
-  Location,
-  LocationSuggestion,
-  OnlineService,
+import {
+  ServiceCatalogKeyMatchType,
+  type CatalogEntryService,
+  type Location,
+  type LocationSuggestion,
+  type OnlineService,
 } from '@direktamt/integrations-contracts';
 import { Injectable } from '@nestjs/common';
 import { CONFIG } from '../../config';
@@ -17,12 +19,13 @@ import { WireLocationDetails } from './wire/WireLocationDetails';
 import { WireLocationSuggestion } from './wire/WireLocationSuggestion';
 import { WireOnlineService } from './wire/WireOnlineService';
 import { WireOnlineServicesResponse } from './wire/WireOnlineServicesResponse';
+import { WireServiceCatalogHierarchyPage } from './wire/WireServiceCatalogHierarchyPage';
 import { WireServiceDescription } from './wire/WireServiceDescription';
 
 /**
  * Adapter for the public PVOG Suchdienst API (no authentication): locations,
- * service details and online services. The service search has its own
- * versioned adapters under serviceSearch/.
+ * service details, service descriptions by LeiKa key and online services.
+ * The service search has its own versioned adapters under serviceSearch/.
  * Docs: GET {baseUrl}/v3/api-docs
  * Handbook: apps/api/docs/INTEGRATIONS.md, section 1.
  */
@@ -42,6 +45,17 @@ export class PvogSearchClient extends BaseHttpClient {
    * against an upstream that keeps producing new page tokens.
    */
   private static readonly MAX_ONLINE_SERVICE_PAGES = 100;
+
+  /**
+   * Page size requested from the LeiKa hierarchy search; one key rarely has
+   * more than a few dozen descriptions, so one page is the normal case.
+   */
+  private static readonly CATALOG_ENTRY_SERVICE_PAGE_SIZE = 100;
+
+  /**
+   * Pages the LeiKa hierarchy search can serve (page index 0 to 100).
+   */
+  private static readonly MAX_CATALOG_ENTRY_SERVICE_PAGES = 101;
 
   /**
    * City / district / postal-code autocomplete.
@@ -178,6 +192,55 @@ export class PvogSearchClient extends BaseHttpClient {
       })),
       lastUpdatedAt: item.lastUpdatedAt,
     }));
+  }
+
+  /**
+   * Service descriptions a territory publishes for one LeiKa key, via the
+   * upstream LeiKa hierarchy search: descriptions with the exact key first;
+   * when there are none, descriptions with more specific keys (refined
+   * variants), and when there are none either, with more general keys. The
+   * territory is resolved upwards (state, federal descriptions included).
+   * Every hit carries the page's exact flag. All pages are collected in
+   * upstream order; a total beyond the upstream page limit is treated as a
+   * contract violation. Not cached: a search, not a key-based read.
+   */
+  async listCatalogEntryServices(
+    serviceCatalogKey: string,
+    regionalKey: string,
+  ): Promise<CatalogEntryService[]> {
+    const path = '/v2/servicedescriptions/leikahierarchy';
+    const services: CatalogEntryService[] = [];
+    let page = 0;
+    let totalPages = 1;
+
+    do {
+      const wire = await this.getModel(WireServiceCatalogHierarchyPage, path, {
+        leikaIds: [serviceCatalogKey],
+        ars: regionalKey,
+        size: PvogSearchClient.CATALOG_ENTRY_SERVICE_PAGE_SIZE,
+        page,
+      });
+      const matchType = wire.meta.exact
+        ? ServiceCatalogKeyMatchType.Exact
+        : ServiceCatalogKeyMatchType.Hierarchy;
+
+      services.push(
+        ...(wire.content ?? []).map((item) => ({
+          matchType,
+          service: toServiceDescription(item),
+        })),
+      );
+      totalPages = wire.totalPages ?? 1;
+
+      if (totalPages > PvogSearchClient.MAX_CATALOG_ENTRY_SERVICE_PAGES) {
+        throw new UpstreamContractViolationException(this.baseUrl + path, [
+          `more than ${PvogSearchClient.MAX_CATALOG_ENTRY_SERVICE_PAGES} pages`,
+        ]);
+      }
+      page += 1;
+    } while (page < totalPages);
+
+    return services;
   }
 
   private toLocation(wire: WireLocationDetails): Location {
