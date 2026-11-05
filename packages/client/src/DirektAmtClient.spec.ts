@@ -1,6 +1,8 @@
-import type {
-  Location,
-  ServiceContext,
+import {
+  ServiceCatalogKeyMatchType,
+  type CatalogEntryService,
+  type Location,
+  type ServiceContext,
 } from '@direktamt/integrations-contracts';
 import { DirektAmtApiError } from './DirektAmtApiError.js';
 import { DirektAmtClient } from './DirektAmtClient.js';
@@ -166,6 +168,16 @@ describe('DirektAmtClient', () => {
       '',
     ],
     [
+      'catalog.listServices',
+      (c: DirektAmtClient) =>
+        c.catalog.listServices({
+          serviceCatalogKey: '99115005104000',
+          regionalKey: '110000000000',
+        }),
+      '/catalog/99115005104000/services',
+      'regionalKey=110000000000',
+    ],
+    [
       'masterTexts.get',
       (c: DirektAmtClient) =>
         c.masterTexts.get({
@@ -198,6 +210,32 @@ describe('DirektAmtClient', () => {
 
     expect(fetch.calls[0].url.pathname).toBe(path);
     expect(fetch.calls[0].url.searchParams.toString()).toBe(query);
+  });
+
+  it('returns the catalog entry services typed with their match type', async () => {
+    const entries: CatalogEntryService[] = [
+      {
+        matchType: ServiceCatalogKeyMatchType.Hierarchy,
+        service: {
+          id: 'L100108.LB.1',
+          serviceCatalogKeys: ['99115005104001'],
+          title: 'Wohnsitz - Hauptwohnung anmelden',
+          regionalKeys: ['110000000000'],
+          availableLanguages: ['de'],
+          sections: [],
+        },
+      },
+    ];
+    const fetch = stubFetch(() => json(entries));
+    const client = new DirektAmtClient({ baseUrl: 'http://api.test', fetch });
+
+    const result = await client.catalog.listServices({
+      serviceCatalogKey: '99115005104000',
+      regionalKey: '110000000000',
+    });
+
+    expect(result[0].matchType).toBe('HIERARCHY');
+    expect(result[0].service.serviceCatalogKeys).toEqual(['99115005104001']);
   });
 
   it('returns the composed service context typed', async () => {

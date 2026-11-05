@@ -28,6 +28,7 @@ const INSTRUCTIONS = [
   'Read-only access to official German public-administration data (PVOG, FIM) through the DirektAmt integrations API.',
   'Territories are identified by a 12-digit regional key: get it from resolveLocation with a city name or postal code (suggestLocations helps with partial names).',
   'Find services of a territory with searchServices, then pass a service id with the regional key to getServiceContext for the complete picture, or to getService or listServiceAuthorities for single parts.',
+  "When the service was picked in the federal catalog (searchCatalog), listCatalogEntryServices returns the territory's own service descriptions for its key.",
   'Results are returned as published by the authorities, neither summarised nor re-ranked; section texts are HTML.',
   'Errors start with a category: invalidArguments, notFound, upstreamUnavailable, apiError or apiUnreachable.',
 ].join(' ');

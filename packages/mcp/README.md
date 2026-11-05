@@ -73,6 +73,7 @@ camelCase and use the verb semantics of the API (`get`, `list`, `search`,
 | `listOnlineServiceAuthorities` | `GET /online-services/{id}/authorities`             | `OnlineServiceAuthority[]`                                               |
 | `searchCatalog`                | `GET /catalog`                                      | `CatalogSearchResult` of the federal LeiKa catalog                       |
 | `getCatalogEntry`              | `GET /catalog/{serviceCatalogKey}`                  | `CatalogEntry`                                                           |
+| `listCatalogEntryServices`     | `GET /catalog/{serviceCatalogKey}/services`         | `CatalogEntryService[]`: a territory's descriptions for a LeiKa key      |
 | `getMasterText`                | `GET /master-texts/{editorialOfficeId}/{serviceId}` | `ParsedMasterText` (unvalidated pass-through)                            |
 
 The tool descriptions tell a model where required ids come from: the

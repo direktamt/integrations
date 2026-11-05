@@ -51,15 +51,15 @@ const entries = await client.catalog.search(
 
 ## API groups
 
-| Group                   | Methods                                    | Endpoints                                                                               |
-| ----------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `client.locations`      | `suggest`, `resolve`, `get`                | `GET /locations/suggestions`, `GET /locations`, `GET /locations/{regionalKey}`          |
-| `client.services`       | `search`, `get`, `getContext`              | `GET /services`, `GET /services/{id}`, `GET /services/{id}/context`                     |
-| `client.authorities`    | `listForService`, `listForOnlineService`   | `GET /services/{id}/authorities`, `GET /online-services/{id}/authorities`               |
-| `client.onlineServices` | `list`                                     | `GET /online-services`                                                                  |
-| `client.catalog`        | `search`, `get`                            | `GET /catalog`, `GET /catalog/{serviceCatalogKey}`                                      |
-| `client.masterTexts`    | `get`                                      | `GET /master-texts/{editorialOfficeId}/{serviceId}`                                     |
-| `client.raw.pvog`       | `getServiceJzufi`, `getOnlineServiceJzufi` | `GET /raw/pvog/services/{id}/jzufi-2-3`, `GET /raw/pvog/online-services/{id}/jzufi-2-3` |
+| Group                   | Methods                                    | Endpoints                                                                                       |
+| ----------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `client.locations`      | `suggest`, `resolve`, `get`                | `GET /locations/suggestions`, `GET /locations`, `GET /locations/{regionalKey}`                  |
+| `client.services`       | `search`, `get`, `getContext`              | `GET /services`, `GET /services/{id}`, `GET /services/{id}/context`                             |
+| `client.authorities`    | `listForService`, `listForOnlineService`   | `GET /services/{id}/authorities`, `GET /online-services/{id}/authorities`                       |
+| `client.onlineServices` | `list`                                     | `GET /online-services`                                                                          |
+| `client.catalog`        | `search`, `get`, `listServices`            | `GET /catalog`, `GET /catalog/{serviceCatalogKey}`, `GET /catalog/{serviceCatalogKey}/services` |
+| `client.masterTexts`    | `get`                                      | `GET /master-texts/{editorialOfficeId}/{serviceId}`                                             |
+| `client.raw.pvog`       | `getServiceJzufi`, `getOnlineServiceJzufi` | `GET /raw/pvog/services/{id}/jzufi-2-3`, `GET /raw/pvog/online-services/{id}/jzufi-2-3`         |
 
 Everything under `client.raw` returns provider representations inside the
 `RawSourceResponse` envelope: `data` follows the provider's own contract and

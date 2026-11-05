@@ -9,7 +9,7 @@
         "name": "@nestjs/swagger",
         "options": {
           "introspectComments": true,
-          "dtoFileNameSuffix": ["Query.ts"],
+          "dtoFileNameSuffix": ["Query.ts", "Params.ts"],
           "controllerFileNameSuffix": ["Controller.ts"]
         }
       }

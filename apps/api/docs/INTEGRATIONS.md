@@ -17,11 +17,11 @@ are listed for reference only.
 
 ## Overview
 
-| API                    | Base URL                                | Auth                 | Integration role                                                                                                                                             |
-| ---------------------- | --------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| PVOG Suchdienst        | `https://pvog.fitko.net/suchdienst/api` | none                 | Implemented: location autocomplete and resolution, service search, service details, responsible authorities, online-service links, raw JZuFi representations |
-| FIM Portal             | `https://fimportal.de/api`              | none                 | Implemented: LeiKa service catalog, federal master texts                                                                                                     |
-| PVOG Bereitstelldienst | issued after approval                   | application required | Reference / not implemented: bulk access to the PVOG data set                                                                                                |
+| API                    | Base URL                                | Auth                 | Integration role                                                                                                                                                                                |
+| ---------------------- | --------------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PVOG Suchdienst        | `https://pvog.fitko.net/suchdienst/api` | none                 | Implemented: location autocomplete and resolution, service search, service details, service descriptions by LeiKa key, responsible authorities, online-service links, raw JZuFi representations |
+| FIM Portal             | `https://fimportal.de/api`              | none                 | Implemented: LeiKa service catalog, federal master texts                                                                                                                                        |
+| PVOG Bereitstelldienst | issued after approval                   | application required | Reference / not implemented: bulk access to the PVOG data set                                                                                                                                   |
 
 Status labels used in this document:
 
@@ -632,7 +632,7 @@ GET /v1/onlineservices/{id}/jzufi-2-3?validdate=        # online service as JZuF
 JZuFi is the JSON form of the XZuFi standard (2.3.1); these endpoints
 return the provider's canonical object without the Suchdienst's search
 model. Both are current (`v1`, tag "JZuFi"), not marked deprecated, and
-replace the deprecated `/v3/servicedescriptions/jzufi` (1.9). The optional
+replace the deprecated `/v3/servicedescriptions/jzufi` (1.10). The optional
 `validdate` (`yyyy-MM-dd`) is not exposed by this project. The same
 resources exist as `jzufi-2-2` and for organisation units
 (`/v1/organisationunits/{id}/jzufi-2-3`); they are not implemented.
@@ -682,7 +682,119 @@ inside the `RawSourceResponse` envelope; only the HTTP status and JSON
 parseability are checked. Used by `GET /raw/pvog/services/{id}/jzufi-2-3`
 and `GET /raw/pvog/online-services/{id}/jzufi-2-3`.
 
-### 1.9 Deprecated endpoints
+### 1.9 Service descriptions by LeiKa key ✅ (implemented)
+
+```
+GET /v2/servicedescriptions/leikahierarchy?leikaIds={key}&ars={ars}&size={5..9999}&page={0..100}
+```
+
+Verified live on 2026-11-05 (200, no deprecation header). Searches the
+service descriptions published for a territory by LeiKa key along the
+catalog hierarchy, in three phases; only the first phase with hits is
+returned:
+
+1. **Exact:** descriptions carrying the requested key. For keys outside the
+   decentral address space the two-digit prefix is ignored:
+   `05115005104000` for Bonn returns the description keyed
+   `99115005104000`, flagged exact.
+2. **More specific keys** when there is no exact hit: Berlin publishes no
+   `99115005104000` but `99115005104001` (main residence) and
+   `99115005104002` (secondary residence); a key on the
+   Leistungskennung level such as `99115005000000` returns every
+   description below it, details included.
+3. **More general keys** when there is no more specific one either:
+   `99115005104009` for Bonn returns the `99115005104000` description.
+
+| Param              | Meaning                                                                                                                                                                                 |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `leikaIds`         | required, repeatable, exactly 14 characters, all keys on the same level; another length or a `TMP_` key answers 400, mixed levels 400, 14 non-digits 500 `UNKNOWN_ERROR`                |
+| `ars`              | required; resolved upwards, so state (`050000000000`) and federal (`000000000000`) descriptions are included; there is no `useArsHierarchy`; an empty value answers 500 `UNKNOWN_ERROR` |
+| `size` / `page`    | 5–9999 (default 10) / 0–100 (default 0); a page beyond the last answers 200 with empty `content`                                                                                        |
+| `ignoreLeikaTypes` | exclude LeiKa typisation codes; not used                                                                                                                                                |
+| `validDate`        | validity date `yyyy-MM-dd`; not used                                                                                                                                                    |
+
+Request:
+
+```
+GET https://pvog.fitko.net/suchdienst/api/v2/servicedescriptions/leikahierarchy?leikaIds=99115005104000&ars=110000000000&size=50
+```
+
+Response (about 37 KB; trimmed):
+
+```json
+{
+  "content": [
+    {
+      "id": "L100108.LB.L100108_120686",
+      "name": "Wohnsitz - Alleinige Wohnung oder Hauptwohnung anmelden",
+      "description": "...",
+      "leikakeys": ["99115005104001"],
+      "ars": ["110000000000"],
+      "arsFederalstate": ["11"],
+      "addressees": ["Bürger", "Unternehmen"],
+      "availableLanguages": ["de"],
+      "details": ["..."]
+    },
+    {
+      "id": "L100108.LB.L100108_351783",
+      "name": "Wohnsitz - Zweitwohnsitz oder Nebenwohnung anmelden",
+      "leikakeys": ["99115005104002"],
+      "ars": ["110000000000"]
+    }
+  ],
+  "meta": { "exact": false },
+  "totalElements": 2,
+  "totalPages": 1,
+  "numberOfElements": 2,
+  "first": true,
+  "last": true,
+  "empty": false,
+  "pageable": { "pageNumber": 0, "pageSize": 50, "offset": 0, "sort": {} }
+}
+```
+
+`content[]` items have the shape of the 1.3 search items (OpenAPI schema
+`SdOutModelV7`), plus `organisationIds`. `ars` of an item is the territory
+of the publishing responsibility, not the requested one: Bonn, Köln and
+Sankt Augustin receive the NRW descriptions with `050000000000` and federal
+descriptions with `000000000000`. `meta.exact` is one flag for the whole
+page. The page reports itself unsorted; every observed result was ordered
+by id, ascending, identically on every page size.
+
+Live comparison with `GET /v3/servicedescriptions/leikaid` (1.12, default
+`useArsHierarchy=true`) on 2026-11-05:
+
+| Key              | Territory                     | `leikaid`                                         | `leikahierarchy`                                                  |
+| ---------------- | ----------------------------- | ------------------------------------------------- | ----------------------------------------------------------------- |
+| `99115005104000` | Berlin `110000000000`         | empty                                             | `exact: false`, 2: `L100108.LB.L100108_120686`, `…_351783`        |
+| `99115005104000` | Bonn `053140000000`           | 1: `L100002.LB.121407320` (Wohnsitz anmelden)     | `exact: true`, the same                                           |
+| `99115009001000` | Sankt Augustin `053820056056` | 1: `L100002.LB.121407336` (Meldebescheinigung)    | `exact: true`, the same                                           |
+| `99115009001000` | Berlin `110000000000`         | 1: `L100108.LB.L100108_120702`                    | `exact: true`, the same                                           |
+| `99107108017000` | Bonn `053140000000`           | 2: federal `B100019.LB.106311931`, NRW `L100002…` | `exact: true`, the same two in the same order                     |
+| `05115005104000` | Bonn `053140000000`           | empty                                             | `exact: true`, 1: `L100002.LB.121407320` (keyed `99115005104000`) |
+| `99115005104009` | Bonn `053140000000`           | empty                                             | `exact: false`, 1: `L100002.LB.121407320` (more general key)      |
+| `99010038020000` | Bonn `053140000000`           | empty                                             | `exact: false`, empty                                             |
+
+**Decision.** `GET /catalog/{serviceCatalogKey}/services` is backed by the
+hierarchy search alone. Its exact phase returned what `leikaid` returned in
+every probe, in the same order, and additionally tolerates another
+address-space prefix; when it is empty, `leikaid` is empty as well, so a
+second call would add nothing. The client sends one key with `size=100`,
+follows `totalPages` (more than 101 pages is treated as a contract
+violation), maps every item with the shared `ServiceDescriptionMapper` and
+marks it `EXACT` or `HIERARCHY` from the page's `meta.exact`; v2 does not say
+whether the fallback went to more specific or more general keys, so the
+contract does not either (the description's own `serviceCatalogKeys` show
+it). The result is not cached: it is a search, not a key-based read. The API
+validates `serviceCatalogKey` (14 digits) and `regionalKey` (12 digits)
+locally and answers 400 before any upstream call.
+
+Wire models: `WireServiceCatalogHierarchyPage`,
+`WireServiceCatalogHierarchyMeta` (required: a page without it is a contract
+violation), `WireServiceDescription`. Used by
+`GET /catalog/{serviceCatalogKey}/services`.
+
+### 1.10 Deprecated endpoints
 
 Listed on the official deprecations page (state of 2026-09-30). All were
 deprecated with release 9.17.4 (May 2026) and are scheduled for removal in
@@ -698,7 +810,7 @@ November 2026. Do not build on them.
 
 None of them is used by this project.
 
-### 1.10 Watch items
+### 1.11 Watch items
 
 - `GET /v8beta1/servicedescriptions` is the announced successor of
   `/v7/servicedescriptions/{ars}`; implemented as an opt-in experimental
@@ -706,14 +818,20 @@ None of them is used by this project.
   beta and a separate decision changes the default.
 - `GET /v1beta2/onlineservices` is beta, see 1.6.
 - `GET /v1beta2/onlineservices/{odId}/organisations` is beta, see 1.7.
+- `GET /v3beta1/servicedescriptions/leikahierarchy` is a beta variant of
+  1.9 that names the phase per response (`leikaMatch.matchType`: `EXACT`,
+  `DESCENDANT`, `ANCESTOR`, `NONE`) and the keys searched in the end
+  (`effectiveLeikaIds`); its hits are a reduced view without `leikakeys`,
+  `ars` or `details` (like 1.3.1). Verified live on 2026-11-05 (Berlin,
+  `99115005104000`: `DESCENDANT`), not used. `/v4beta1/servicedescriptions/leikaid`
+  is the beta variant of `leikaid`.
 
-### 1.11 Auxiliary endpoints (reference, not implemented)
+### 1.12 Auxiliary endpoints (reference, not implemented)
 
 Verified with a live request on 2026-09-30 unless noted:
 
 ```
-GET /v3/servicedescriptions/leikaid?leikaIds={key}&ars={ars}          # services by LeiKa key, paginated ✅
-GET /v2/servicedescriptions/leikahierarchy?leikaIds={key}&ars={ars}   # LeiKa hierarchy search ✅
+GET /v3/servicedescriptions/leikaid?leikaIds={key}&ars={ars}          # services by exact LeiKa key, paginated ✅ (see 1.9)
 GET /v1/servicedescriptions/suggestions/{ars}?q={prefix}              # service-name autocomplete, 5 results ✅
 GET /v1/personalmatters/{ars}                                         # life situations with services in a territory ✅
 GET /v2/client-stats                                                  # object counts per federal state with timestamps ✅
@@ -725,6 +843,12 @@ GET /v1/organisationunits/{id}/jzufi-2-3                              # organisa
 
 The CSV export answers 401 when `Accept: application/json` is sent; request it
 without an `Accept` header.
+
+`leikaid` (verified again on 2026-11-05) answers the 1.9 page envelope
+without `meta` and accepts `q`, `useArsHierarchy` (default `true`),
+`withOrgIds`, `validDate`, `size` and `page`. It matches the full key only,
+so Berlin's refined Anmeldung keys are not found with `99115005104000`; 1.9
+covers its results.
 
 ---
 
@@ -976,6 +1100,14 @@ checklist for coding agents.
 
 ## Changelog
 
+- **2026-11-05** (services by LeiKa key):
+  `/v2/servicedescriptions/leikahierarchy` verified live and implemented
+  (1.9) for `GET /catalog/{serviceCatalogKey}/services`; compared with
+  `/v3/servicedescriptions/leikaid`, which stays a reference endpoint
+  because the hierarchy search covers its results. Drift probe and
+  undeclared-field baseline added. `/v3beta1/servicedescriptions/leikahierarchy`
+  recorded as a watch item. Sections 1.9 to 1.11 renumbered to 1.10 to
+  1.12.
 - **2026-09-30** (contract-drift monitoring): automated live verification
   added (`npm run verify:contracts`, weekly workflow `contract-drift.yml`)
   covering all 14 implemented endpoints; first run: 14 × OK, no breaking

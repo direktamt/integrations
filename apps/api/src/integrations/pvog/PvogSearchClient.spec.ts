@@ -1,5 +1,6 @@
 import {
   AuthorityRole,
+  ServiceCatalogKeyMatchType,
   ServiceSectionType,
 } from '@direktamt/integrations-contracts';
 import { FetchStub } from '../../../test/FetchStub';
@@ -338,6 +339,183 @@ describe('PvogSearchClient', () => {
       },
     ]);
   });
+
+  describe('catalog entry services', () => {
+    const HIERARCHY_PATH =
+      '/suchdienst/api/v2/servicedescriptions/leikahierarchy';
+    const description = (id: string, leikakey: string) => ({
+      id,
+      name: id,
+      leikakeys: [leikakey],
+      ars: ['110000000000'],
+      arsFederalstate: ['11'],
+      availableLanguages: ['de'],
+      details: [],
+    });
+    const hierarchyPage = (
+      exact: boolean,
+      totalPages: number,
+      ...content: ReturnType<typeof description>[]
+    ) =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            content,
+            meta: { exact },
+            totalElements: content.length,
+            totalPages,
+            last: true,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+
+    it('requests the hierarchy search for one key and territory', async () => {
+      fetchStub.respondWith(() => hierarchyPage(true, 1));
+
+      await client.listCatalogEntryServices('99115005104000', '053140000000');
+
+      const params = fetchStub.lastUrl().searchParams;
+      expect(fetchStub.lastUrl().pathname).toBe(HIERARCHY_PATH);
+      expect(params.getAll('leikaIds')).toEqual(['99115005104000']);
+      expect(params.get('ars')).toBe('053140000000');
+      expect(params.get('size')).toBe('100');
+      expect(params.get('page')).toBe('0');
+    });
+
+    it('maps exact hits to full descriptions marked EXACT', async () => {
+      fetchStub.respondWithJson({
+        content: [SERVICE_DESCRIPTION],
+        meta: { exact: true },
+        totalElements: 1,
+        totalPages: 1,
+      });
+
+      const services = await client.listCatalogEntryServices(
+        '99115005104000',
+        '053150000000',
+      );
+
+      expect(services).toHaveLength(1);
+      expect(services[0].matchType).toBe(ServiceCatalogKeyMatchType.Exact);
+      expect(services[0].service).toMatchObject({
+        id: 'L100002.LB.1',
+        title: 'Wohnsitz anmelden',
+        serviceCatalogKeys: ['99115005104000'],
+        regionalKeys: ['053150000000'],
+        federalStateKeys: ['05'],
+      });
+      expect(services[0].service.sections[0].type).toBe(
+        ServiceSectionType.RequiredDocuments,
+      );
+    });
+
+    it('marks hits of a fallback page as HIERARCHY', async () => {
+      fetchStub.respondWith(() =>
+        hierarchyPage(
+          false,
+          1,
+          description('L100108.LB.1', '99115005104001'),
+          description('L100108.LB.2', '99115005104002'),
+        ),
+      );
+
+      const services = await client.listCatalogEntryServices(
+        '99115005104000',
+        '110000000000',
+      );
+
+      expect(
+        services.map((entry) => [
+          entry.service.id,
+          entry.service.serviceCatalogKeys,
+          entry.matchType,
+        ]),
+      ).toEqual([
+        [
+          'L100108.LB.1',
+          ['99115005104001'],
+          ServiceCatalogKeyMatchType.Hierarchy,
+        ],
+        [
+          'L100108.LB.2',
+          ['99115005104002'],
+          ServiceCatalogKeyMatchType.Hierarchy,
+        ],
+      ]);
+    });
+
+    it('returns an empty list when nothing is published', async () => {
+      fetchStub.respondWithJson({
+        content: [],
+        meta: { exact: false },
+        totalElements: 0,
+        totalPages: 0,
+      });
+
+      await expect(
+        client.listCatalogEntryServices('99010038020000', '053140000000'),
+      ).resolves.toEqual([]);
+      expect(fetchStub.calls).toHaveLength(1);
+    });
+
+    it('collects every page in upstream order with the same filters', async () => {
+      fetchStub.respondWith((url) => {
+        const page = new URL(url).searchParams.get('page');
+
+        return page === '1'
+          ? hierarchyPage(
+              false,
+              2,
+              description('L100002.LB.2', '99140001002000'),
+            )
+          : hierarchyPage(
+              false,
+              2,
+              description('L100002.LB.1', '99140001001000'),
+            );
+      });
+
+      const services = await client.listCatalogEntryServices(
+        '99140001000000',
+        '053140000000',
+      );
+
+      expect(fetchStub.calls).toHaveLength(2);
+      const second = new URL(fetchStub.calls[1].url).searchParams;
+      expect(second.getAll('leikaIds')).toEqual(['99140001000000']);
+      expect(second.get('ars')).toBe('053140000000');
+      expect(second.get('page')).toBe('1');
+      expect(services.map((entry) => entry.service.id)).toEqual([
+        'L100002.LB.1',
+        'L100002.LB.2',
+      ]);
+    });
+
+    it('rejects a page without match metadata as a contract violation', async () => {
+      fetchStub.respondWithJson({
+        content: [SERVICE_DESCRIPTION],
+        totalElements: 1,
+        totalPages: 1,
+      });
+
+      await expect(
+        client.listCatalogEntryServices('99115005104000', '053150000000'),
+      ).rejects.toBeInstanceOf(UpstreamContractViolationException);
+    });
+
+    it('rejects a total beyond the upstream page limit as a contract violation', async () => {
+      fetchStub.respondWith(() =>
+        hierarchyPage(true, 102, description('L100002.LB.1', '99115005104000')),
+      );
+
+      await expect(
+        client.listCatalogEntryServices('99115005104000', '053150000000'),
+      ).rejects.toBeInstanceOf(UpstreamContractViolationException);
+      expect(fetchStub.calls).toHaveLength(1);
+    });
+  });
+
   describe('online-service pagination', () => {
     const service = (id: string) => ({
       id,
