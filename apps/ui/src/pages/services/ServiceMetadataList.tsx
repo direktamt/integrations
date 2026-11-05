@@ -48,22 +48,33 @@ export function ServiceMetadataList({
 
   return (
     <Stack
-      direction={dense ? 'column' : 'row'}
-      spacing={dense ? 1 : 4}
-      flexWrap="wrap"
+      direction="row"
       useFlexGap
+      sx={{
+        flexWrap: 'wrap',
+        columnGap: dense ? 2.5 : 4,
+        rowGap: dense ? 1.5 : 2,
+      }}
     >
       {groups.map((group) => (
         <Box key={group.title}>
           <Typography
-            variant={dense ? 'caption' : 'subtitle2'}
-            color={dense ? 'text.secondary' : undefined}
+            variant="caption"
             component="div"
-            gutterBottom={!dense}
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 600,
+              marginBottom: 0.75,
+            }}
           >
             {group.title}
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack
+            direction="row"
+            spacing={0.75}
+            useFlexGap
+            sx={{ flexWrap: 'wrap' }}
+          >
             {group.chips}
           </Stack>
         </Box>

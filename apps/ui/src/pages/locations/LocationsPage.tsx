@@ -1,5 +1,5 @@
+import { PageHeader } from '@direktamt/ui-kit';
 import { Stack } from '@mui/material';
-import { PageHeader } from '../../components/PageHeader';
 import { LocationResolvePanel } from './LocationResolvePanel';
 import { LocationReverseLookupPanel } from './LocationReverseLookupPanel';
 import { LocationSuggestPanel } from './LocationSuggestPanel';
@@ -11,6 +11,7 @@ export function LocationsPage() {
   return (
     <>
       <PageHeader
+        overline="Territories"
         title="Locations"
         description="City autocomplete, resolution to regional keys (ARS) and reverse lookup."
       />

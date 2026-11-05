@@ -1,4 +1,4 @@
-import { Alert } from '@mui/material';
+import { Alert, AlertTitle } from '@mui/material';
 import { ApiError } from '../api/ApiError';
 
 interface ValidationErrorAlertProps {
@@ -14,7 +14,8 @@ export function ValidationErrorAlert({ error }: ValidationErrorAlertProps) {
     return null;
   }
   return (
-    <Alert severity="warning" sx={{ mt: 1 }}>
+    <Alert severity="warning" sx={{ mt: 2 }}>
+      <AlertTitle>The API rejected the request</AlertTitle>
       {error.details.map((detail) => (
         <div key={detail}>{detail}</div>
       ))}

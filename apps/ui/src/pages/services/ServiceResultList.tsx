@@ -2,12 +2,13 @@ import type {
   PublicServiceDescription,
   ServiceSearchResult,
 } from '@direktamt/integrations-contracts';
-import { Stack, TablePagination } from '@mui/material';
+import { Box, Stack, TablePagination, Typography } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { DataTable } from '../../components/DataTable';
 import { KeyChip } from '../../components/KeyChip';
 import { serializeDefaultTrueBoolean } from './DefaultTrueBoolean';
 import { ServiceMetadataList } from './ServiceMetadataList';
+import { deriveServiceSummary } from './ServiceSummary';
 import { deriveServiceTitle } from './ServiceTitle';
 
 interface ServiceResultListProps {
@@ -39,13 +40,34 @@ export function ServiceResultList({
       columns={[
         {
           header: 'Title',
-          render: (service: PublicServiceDescription) =>
-            deriveServiceTitle(service),
+          render: (service: PublicServiceDescription) => (
+            <Box sx={{ minWidth: 220 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {deriveServiceTitle(service)}
+              </Typography>
+              {deriveServiceSummary(service) && (
+                <Typography
+                  variant="caption"
+                  component="div"
+                  sx={{
+                    color: 'text.secondary',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    marginTop: 0.25,
+                  }}
+                >
+                  {deriveServiceSummary(service)}
+                </Typography>
+              )}
+            </Box>
+          ),
         },
         {
           header: 'Service catalog keys',
           render: (service: PublicServiceDescription) => (
-            <Stack gap={1}>
+            <Stack spacing={0.5} sx={{ alignItems: 'flex-start' }}>
               {service.serviceCatalogKeys.map((key) => (
                 <KeyChip key={key} value={key} />
               ))}
@@ -54,7 +76,7 @@ export function ServiceResultList({
         },
         {
           header: 'Sections',
-          width: 100,
+          width: 90,
           render: (service: PublicServiceDescription) =>
             service.sections.length,
         },
@@ -66,6 +88,7 @@ export function ServiceResultList({
           ),
         },
       ]}
+      caption={`${result.totalElements ?? result.services.length} services`}
       rows={result.services}
       getRowKey={(service, index) => service.id ?? String(index)}
       onRowClick={(service) => {

@@ -13,9 +13,9 @@ sessions.
 
 ## Stack
 
-- React 18 and strict TypeScript
+- React 19 and strict TypeScript
 - Vite
-- Material UI 6
+- Material UI 9 with the DirektAmt UI kit (`@direktamt/ui-kit`)
 - TanStack React Query 5
 - React Router 7
 - Axios through the typed `ApiClient`
@@ -27,6 +27,33 @@ cross-page client-state requirement.
 
 Response models come from the shared
 `@direktamt/integrations-contracts` workspace package.
+
+## Look and layout
+
+The console uses the public DirektAmt UI kit for its theme, fonts, logo and
+favicon, and for the application frame: `AppShell` with a grouped side
+navigation (a drawer on small screens), `PageHeader`, `SectionCard`,
+`DescriptionList`, `CodeBlock`, `EmptyState` and `LoadingState`. Light and
+dark colour schemes follow the system setting and can be switched in the
+header; the choice is stored in `localStorage`. Every page header lists the
+integrations API endpoints the page calls. The header links to the API's
+Swagger UI (`/docs`), and the navigation footer shows the configured API
+base URL.
+
+Until `@direktamt/ui-kit` is available on npm, install a local build of the
+kit without recording it in the lockfile, from the kit's checkout:
+
+```bash
+npm pack --pack-destination /tmp
+```
+
+and then in this repository (temporarily remove the `@direktamt/ui-kit`
+entry from `apps/ui/package.json` first, so that npm does not look it up in
+the registry, and restore it afterwards):
+
+```bash
+npm install --no-save /tmp/direktamt-ui-kit-0.1.0.tgz -w @direktamt/integrations-ui
+```
 
 ## Getting started
 
@@ -123,7 +150,8 @@ Defaults match the API: `fuzzySearch` and `useRegionalHierarchy` default to
 checkboxes and the outgoing request always reflect the effective value; an
 unchecked box sends `false` explicitly.
 
-Results use server-side pagination and show titles, service catalog keys,
+Results use server-side pagination and show titles with the summary as
+plain text, service catalog keys,
 section counts, and the publication metadata (target audiences, languages,
 federal states) as compact chip groups; empty groups are omitted. Selecting a row opens the deep-linkable
 `/services/:id?regionalKey=...` detail page; when the search ran with

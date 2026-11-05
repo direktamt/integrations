@@ -1,6 +1,7 @@
+import CheckIcon from '@mui/icons-material/Check';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { Chip, Tooltip } from '@mui/material';
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 
 interface KeyChipProps {
   value: string;
@@ -12,7 +13,7 @@ interface KeyChipProps {
 export function KeyChip({ value }: KeyChipProps) {
   const [copied, setCopied] = useState(false);
 
-  const copy = (event: React.MouseEvent) => {
+  const copy = (event: MouseEvent) => {
     event.stopPropagation();
     void navigator.clipboard.writeText(value);
     setCopied(true);
@@ -23,7 +24,19 @@ export function KeyChip({ value }: KeyChipProps) {
       title={copied ? 'Copied' : 'Copy'}
       onClose={() => setCopied(false)}
     >
-      <Chip label={value} icon={<ContentCopyIcon />} onClick={copy} />
+      <Chip
+        label={value}
+        size="small"
+        icon={copied ? <CheckIcon /> : <ContentCopyIcon />}
+        onClick={copy}
+        aria-label={`Copy ${value}`}
+        sx={{
+          fontFamily: 'monospace',
+          fontSize: '0.75rem',
+          fontWeight: 500,
+          '& .MuiChip-icon': { fontSize: 14, marginInlineStart: '6px' },
+        }}
+      />
     </Tooltip>
   );
 }

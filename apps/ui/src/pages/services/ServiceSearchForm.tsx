@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { FormEvent, useState } from 'react';
 import { SearchServicesParams } from '../../api/queries/useServiceQueries';
+import { FormRow } from '../../components/FormRow';
 import { KeyListField } from '../../components/KeyListField';
 
 interface ServiceSearchFormProps {
@@ -55,8 +56,8 @@ export function ServiceSearchForm({
 
   return (
     <form onSubmit={submit}>
-      <Stack spacing={2} sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+      <Stack spacing={2}>
+        <FormRow>
           <TextField
             label="Regional key"
             size="small"
@@ -70,7 +71,7 @@ export function ServiceSearchForm({
             required
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            sx={{ minWidth: 280 }}
+            sx={{ minWidth: { md: 260 } }}
           />
           <TextField
             label="Size"
@@ -78,7 +79,7 @@ export function ServiceSearchForm({
             type="number"
             value={size}
             onChange={(event) => setSize(event.target.value)}
-            sx={{ width: 100 }}
+            sx={{ width: { md: 100 } }}
             slotProps={{ htmlInput: { min: 5 } }}
           />
           <KeyListField
@@ -94,8 +95,13 @@ export function ServiceSearchForm({
             onChange={(event) => setValidDate(event.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
           />
-        </Stack>
-        <Stack direction="row" spacing={2} alignItems="center">
+        </FormRow>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={{ xs: 1, sm: 2 }}
+          useFlexGap
+          sx={{ alignItems: { sm: 'center' }, flexWrap: 'wrap' }}
+        >
           <FormControlLabel
             control={
               <Checkbox
@@ -116,7 +122,14 @@ export function ServiceSearchForm({
             }
             label="Use regional hierarchy"
           />
-          <Button type="submit" variant="contained">
+          <Button
+            type="submit"
+            variant="contained"
+            sx={{
+              marginInlineStart: { sm: 'auto' },
+              alignSelf: { xs: 'flex-start', sm: 'auto' },
+            }}
+          >
             Search
           </Button>
         </Stack>

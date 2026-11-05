@@ -1,6 +1,6 @@
 import SearchIcon from '@mui/icons-material/Search';
 import type { Location } from '@direktamt/integrations-contracts';
-import { Button } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { DataTable } from '../../components/DataTable';
 import { KeyChip } from '../../components/KeyChip';
@@ -31,10 +31,15 @@ export function LocationResultTable({ locations }: LocationResultTableProps) {
             <KeyChip value={location.federalStateKey} />
           ),
         },
-        { header: 'Name', render: (location: Location) => location.name },
+        {
+          header: 'Name',
+          render: (location: Location) => (
+            <Box sx={{ fontWeight: 500 }}>{location.name}</Box>
+          ),
+        },
         {
           header: 'Actions',
-          width: 200,
+          width: 220,
           render: (location: Location) => (
             <Button
               size="small"

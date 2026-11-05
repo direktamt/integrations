@@ -1,14 +1,9 @@
-import {
-  Autocomplete,
-  Card,
-  CardContent,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { SectionCard } from '@direktamt/ui-kit';
+import { Autocomplete, Stack, TextField, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useSuggestLocations } from '../../api/queries/useLocationQueries';
+import { EndpointChip } from '../../components/EndpointChip';
 
 const DEBOUNCE_MS = 300;
 
@@ -53,42 +48,37 @@ export function LocationSuggestPanel() {
   const suggestionsQuery = useSuggestLocations(query);
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Suggest
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          GET /locations/suggestions — autocomplete for a partial city name or
-          postal code.
-        </Typography>
-        <Autocomplete
-          freeSolo
-          options={suggestionsQuery.data ?? []}
-          getOptionLabel={(option) =>
-            typeof option === 'string' ? option : option.name
-          }
-          filterOptions={(options) => options}
-          loading={suggestionsQuery.isFetching}
-          inputValue={input}
-          onInputChange={(_, newInput) => setInput(newInput)}
-          noOptionsText={query ? 'No suggestions.' : 'Type to get suggestions.'}
-          renderOption={(props, option) => (
-            <li {...props} key={`${option.name}-${option.relevance}`}>
-              <Stack>
-                <Typography variant="body2">{option.name}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  relevance {option.relevance}
-                </Typography>
-              </Stack>
-            </li>
-          )}
-          renderInput={(params) => (
-            <TextField {...params} label="Query" size="small" />
-          )}
-          sx={{ my: 1, maxWidth: 400 }}
-        />
-      </CardContent>
-    </Card>
+    <SectionCard
+      title="Suggest"
+      description="Autocomplete for a partial city name or postal code, with relevance scores."
+      actions={<EndpointChip path="/locations/suggestions" />}
+    >
+      <Autocomplete
+        freeSolo
+        options={suggestionsQuery.data ?? []}
+        getOptionLabel={(option) =>
+          typeof option === 'string' ? option : option.name
+        }
+        filterOptions={(options) => options}
+        loading={suggestionsQuery.isFetching}
+        inputValue={input}
+        onInputChange={(_, newInput) => setInput(newInput)}
+        noOptionsText={query ? 'No suggestions.' : 'Type to get suggestions.'}
+        renderOption={(props, option) => (
+          <li {...props} key={`${option.name}-${option.relevance}`}>
+            <Stack>
+              <Typography variant="body2">{option.name}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                relevance {option.relevance}
+              </Typography>
+            </Stack>
+          </li>
+        )}
+        renderInput={(params) => (
+          <TextField {...params} label="Query" size="small" />
+        )}
+        sx={{ maxWidth: 420 }}
+      />
+    </SectionCard>
   );
 }

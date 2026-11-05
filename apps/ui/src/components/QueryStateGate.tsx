@@ -1,10 +1,6 @@
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Typography,
-} from '@mui/material';
+import { EmptyState, LoadingState } from '@direktamt/ui-kit';
+import SearchIcon from '@mui/icons-material/Search';
+import { Button } from '@mui/material';
 import { UseQueryResult } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import { ApiError } from '../api/ApiError';
@@ -21,14 +17,18 @@ interface QueryStateGateProps<T> {
    */
   idleMessage?: string;
   /**
-   * Custom rendering for 404 (defaults to an inline warning alert).
+   * Custom rendering for 404 (defaults to an inline not-found state).
    */
   renderNotFound?: (error: ApiError) => ReactNode;
+  /**
+   * Compact states for nested regions (cards, dialogs).
+   */
+  dense?: boolean;
   children: (data: T) => ReactNode;
 }
 
 /**
- * Wrapper for every query-driven area: idle hint, spinner, error with
+ * Wrapper for every query-driven area: idle hint, loading state, error with
  * retry, 404 inline state, explicit empty state.
  * 400 validation errors render nothing here — the owning form shows them.
  */
@@ -38,22 +38,22 @@ export function QueryStateGate<T>({
   emptyMessage = 'No results for this query.',
   idleMessage,
   renderNotFound,
+  dense = false,
   children,
 }: QueryStateGateProps<T>) {
   if (query.isPending && query.fetchStatus === 'idle') {
     return idleMessage ? (
-      <Typography variant="body2" color="text.secondary">
-        {idleMessage}
-      </Typography>
+      <EmptyState
+        icon={<SearchIcon />}
+        title="Nothing requested yet"
+        description={idleMessage}
+        dense={dense}
+      />
     ) : null;
   }
 
   if (query.isPending) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress size={28} />
-      </Box>
-    );
+    return <LoadingState dense={dense} />;
   }
 
   if (query.isError) {
@@ -65,14 +65,23 @@ export function QueryStateGate<T>({
       return renderNotFound ? (
         <>{renderNotFound(error)}</>
       ) : (
-        <Alert severity="warning">{error.message}</Alert>
+        <EmptyState
+          tone="warning"
+          title="Not found"
+          description={error.message}
+          dense={dense}
+        />
       );
     }
     return (
-      <Alert
-        severity="error"
+      <EmptyState
+        tone="error"
+        title="The request failed"
+        description={error.message}
+        dense={dense}
         action={
           <Button
+            variant="outlined"
             color="inherit"
             size="small"
             onClick={() => void query.refetch()}
@@ -80,17 +89,13 @@ export function QueryStateGate<T>({
             Retry
           </Button>
         }
-      >
-        {error.message}
-      </Alert>
+      />
     );
   }
 
   if (isEmpty?.(query.data)) {
     return (
-      <Typography variant="body2" color="text.secondary">
-        {emptyMessage}
-      </Typography>
+      <EmptyState title="No results" description={emptyMessage} dense={dense} />
     );
   }
 

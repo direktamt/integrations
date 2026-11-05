@@ -1,6 +1,6 @@
 # DirektAmt Integrations UI: Agent Instructions
 
-React 18 + Vite internal inspector for the integrations API. Read the root
+React 19 + Vite internal inspector for the integrations API. Read the root
 `.agents/AGENTS.md` and `README.md` before changing this application. The root
 rules still apply; the rules below are UI-specific.
 
@@ -75,9 +75,16 @@ exist.
    network, and unexpected errors to `ErrorSnackbar`; do not mount additional
    global snackbar hosts.
 
-7. **Compose with the existing inspector primitives.** Prefer `PageHeader`,
-   `DataTable`, `KeyChip`, `JsonViewer`, and `QueryStateGate` before adding a
-   new abstraction. Keep server-side pagination controlled by URL parameters.
+7. **Compose with the UI kit and the inspector primitives.** Theme, fonts,
+   logo, favicon and the application frame come from `@direktamt/ui-kit`
+   (`AppShell`, `PageHeader`, `SectionCard`, `DescriptionList`,
+   `CodeBlock`, `EmptyState`, `LoadingState`); do not add a local theme,
+   hard-coded colours or shadows, use palette keys such as `text.secondary`
+   and `border.subtle`. Every page header lists its endpoints with
+   `EndpointList`; forms go into a `SectionCard` with `FormRow`. Prefer
+   `DataTable`, `KeyChip`, `JsonViewer`, and `QueryStateGate` before adding
+   a new abstraction. Put layout props into `sx`; Material UI 9 has no
+   system props on `Box`, `Stack` and `Typography`. Keep server-side pagination controlled by URL parameters.
    Use `KeyChip` for official identifiers and keep raw-response access through
    `JsonViewer` when it helps inspection.
 

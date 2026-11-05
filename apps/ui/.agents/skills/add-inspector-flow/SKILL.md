@@ -49,7 +49,8 @@ description: >
 
 5. **Compose the UI.** Let the page or a page-private orchestration component
    call the hook. Pass loaded data and callbacks into presentational
-   components. Reuse `PageHeader`, `DataTable`, `KeyChip`, `JsonViewer`, and
+   components. Reuse `PageHeader` and `SectionCard` from `@direktamt/ui-kit`,
+   `EndpointList`, `FormRow`, `DataTable`, `KeyChip`, `JsonViewer`, and
    existing resource components. Move a component to `src/components/` only
    after a second page uses it.
 

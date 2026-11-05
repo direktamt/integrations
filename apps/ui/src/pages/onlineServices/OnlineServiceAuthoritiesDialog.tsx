@@ -37,6 +37,7 @@ export function OnlineServiceAuthoritiesDialog({
         <QueryStateGate
           query={authoritiesQuery}
           isEmpty={(authorities) => authorities.length === 0}
+          dense
           emptyMessage="No responsible organisation is published for this online service."
         >
           {(authorities) => (
@@ -48,7 +49,9 @@ export function OnlineServiceAuthoritiesDialog({
         </QueryStateGate>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+        <Button variant="outlined" color="inherit" onClick={onClose}>
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   );

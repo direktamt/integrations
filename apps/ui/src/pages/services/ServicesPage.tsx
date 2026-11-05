@@ -1,9 +1,11 @@
+import { PageHeader, SectionCard } from '@direktamt/ui-kit';
+import { Stack } from '@mui/material';
 import { useSearchParams } from 'react-router';
 import {
   SearchServicesParams,
   useSearchServices,
 } from '../../api/queries/useServiceQueries';
-import { PageHeader } from '../../components/PageHeader';
+import { EndpointList } from '../../components/EndpointList';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
 import {
@@ -67,31 +69,38 @@ export function ServicesPage() {
   return (
     <>
       <PageHeader
+        overline="Services (PVOG)"
         title="Services"
-        description="Plain-language search for public services within a territory."
-      />
-      <ServiceSearchForm
-        key={searchParams.toString()}
-        initialValues={params}
-        onSubmit={applyParams}
-      />
-      <ValidationErrorAlert error={searchQuery.error} />
-      <QueryStateGate
-        query={searchQuery}
-        idleMessage="Provide a regional key and a query to search."
-        isEmpty={(result) => result.services.length === 0}
+        description="Plain-language search for public services within a territory; select a row for the full service description."
       >
-        {(result) => (
-          <ServiceResultList
-            result={result}
-            regionalKey={params.regionalKey}
-            useRegionalHierarchy={params.useRegionalHierarchy ?? true}
-            page={params.page ?? 0}
-            size={params.size ?? DEFAULT_SIZE}
-            onPageChange={(page) => applyParams({ ...params, page })}
+        <EndpointList paths={['/services']} />
+      </PageHeader>
+      <Stack spacing={3}>
+        <SectionCard title="Search">
+          <ServiceSearchForm
+            key={searchParams.toString()}
+            initialValues={params}
+            onSubmit={applyParams}
           />
-        )}
-      </QueryStateGate>
+          <ValidationErrorAlert error={searchQuery.error} />
+        </SectionCard>
+        <QueryStateGate
+          query={searchQuery}
+          idleMessage="Provide a regional key and a query to search."
+          isEmpty={(result) => result.services.length === 0}
+        >
+          {(result) => (
+            <ServiceResultList
+              result={result}
+              regionalKey={params.regionalKey}
+              useRegionalHierarchy={params.useRegionalHierarchy ?? true}
+              page={params.page ?? 0}
+              size={params.size ?? DEFAULT_SIZE}
+              onPageChange={(page) => applyParams({ ...params, page })}
+            />
+          )}
+        </QueryStateGate>
+      </Stack>
     </>
   );
 }

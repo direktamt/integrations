@@ -1,4 +1,5 @@
-import ArticleIcon from '@mui/icons-material/Article';
+import { DescriptionList } from '@direktamt/ui-kit';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import type { CatalogEntry } from '@direktamt/integrations-contracts';
 import {
   Button,
@@ -7,11 +8,8 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
 } from '@mui/material';
+import { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { useCatalogEntry } from '../../api/queries/useCatalogQueries';
 import { JsonViewer } from '../../components/JsonViewer';
@@ -40,7 +38,7 @@ export function CatalogEntryDialog({
     );
   };
 
-  const fields = (entry: CatalogEntry): [string, React.ReactNode][] => [
+  const fields = (entry: CatalogEntry): [string, ReactNode][] => [
     ['Service catalog key', <KeyChip value={entry.serviceCatalogKey} />],
     ['Editorial office id', <KeyChip value={entry.editorialOfficeId} />],
     ['Service id', <KeyChip value={entry.serviceId} />],
@@ -59,37 +57,33 @@ export function CatalogEntryDialog({
     <Dialog open onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Catalog entry {serviceCatalogKey}</DialogTitle>
       <DialogContent>
-        <QueryStateGate query={entryQuery}>
+        <QueryStateGate query={entryQuery} dense>
           {(entry) => (
             <Stack spacing={2}>
-              <Table size="small">
-                <TableBody>
-                  {fields(entry).map(([label, value]) => (
-                    <TableRow key={label}>
-                      <TableCell sx={{ width: 200, fontWeight: 500 }}>
-                        {label}
-                      </TableCell>
-                      <TableCell sx={{ whiteSpace: 'pre-line' }}>
-                        {value}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <Button
-                startIcon={<ArticleIcon />}
-                onClick={() => openMasterTexts(entry)}
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                Open master texts
-              </Button>
+              <DescriptionList
+                items={fields(entry).map(([label, value]) => ({
+                  label,
+                  value,
+                }))}
+              />
               <JsonViewer data={entry} title="Raw response" />
             </Stack>
           )}
         </QueryStateGate>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+        {entryQuery.data && (
+          <Button
+            startIcon={<ArticleOutlinedIcon />}
+            onClick={() => openMasterTexts(entryQuery.data)}
+            sx={{ marginInlineEnd: 'auto' }}
+          >
+            Open master texts
+          </Button>
+        )}
+        <Button variant="outlined" color="inherit" onClick={onClose}>
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   );

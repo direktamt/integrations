@@ -1,5 +1,5 @@
+import { EmptyState, PageHeader, SectionCard } from '@direktamt/ui-kit';
 import {
-  Alert,
   Button,
   Chip,
   MenuItem,
@@ -13,8 +13,9 @@ import {
   useRawPvogJzufi,
   type RawPvogResource,
 } from '../../api/queries/useRawSourceQueries';
+import { EndpointList } from '../../components/EndpointList';
+import { FormRow } from '../../components/FormRow';
 import { JsonViewer } from '../../components/JsonViewer';
-import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
 
@@ -60,74 +61,87 @@ export function RawSourcesPage() {
   return (
     <>
       <PageHeader
+        overline="Diagnostics"
         title="Raw sources"
         description="Provider representations as delivered by PVOG (JZuFi 2.3); not normalized, no compatibility guarantee."
-      />
-      <form onSubmit={submit}>
-        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-          <TextField
-            select
-            label="Resource"
-            size="small"
-            value={resourceInput}
-            onChange={(event) =>
-              setResourceInput(parseResource(event.target.value))
-            }
-            sx={{ minWidth: 220 }}
-          >
-            {RESOURCES.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            label="PVOG id"
-            size="small"
-            required
-            value={idInput}
-            onChange={(event) => setIdInput(event.target.value)}
-            sx={{ minWidth: 280 }}
-          />
-          <Button
-            type="submit"
-            variant="contained"
-            sx={{ alignSelf: 'flex-start' }}
-          >
-            Load
-          </Button>
-        </Stack>
-      </form>
-      <ValidationErrorAlert error={rawQuery.error} />
-      <QueryStateGate
-        query={rawQuery}
-        idleMessage="Provide a PVOG id of a service description or an online service."
-        renderNotFound={() => (
-          <Alert severity="info">
-            PVOG has no JZuFi representation for this id.
-          </Alert>
-        )}
       >
-        {(response) => (
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="body2" color="text.secondary">
-                Envelope
-              </Typography>
-              <Chip label={`provider: ${response.provider}`} size="small" />
-              <Chip
-                label={`representation: ${response.representation}`}
+        <EndpointList paths={['/raw/pvog/{resource}/{id}/jzufi-2-3']} />
+      </PageHeader>
+      <Stack spacing={3}>
+        <SectionCard title="Load">
+          <form onSubmit={submit}>
+            <FormRow>
+              <TextField
+                select
+                label="Resource"
                 size="small"
+                value={resourceInput}
+                onChange={(event) =>
+                  setResourceInput(parseResource(event.target.value))
+                }
+                sx={{ minWidth: { md: 220 } }}
+              >
+                {RESOURCES.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="PVOG id"
+                size="small"
+                required
+                value={idInput}
+                onChange={(event) => setIdInput(event.target.value)}
+                sx={{ minWidth: { md: 320 } }}
+              />
+              <Button type="submit" variant="contained">
+                Load
+              </Button>
+            </FormRow>
+          </form>
+          <ValidationErrorAlert error={rawQuery.error} />
+        </SectionCard>
+        <QueryStateGate
+          query={rawQuery}
+          idleMessage="Provide a PVOG id of a service description or an online service."
+          renderNotFound={() => (
+            <EmptyState
+              tone="info"
+              title="Not found"
+              description="PVOG has no JZuFi representation for this id."
+            />
+          )}
+        >
+          {(response) => (
+            <Stack spacing={2}>
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', fontWeight: 500 }}
+                >
+                  Envelope
+                </Typography>
+                <Chip label={`provider: ${response.provider}`} size="small" />
+                <Chip
+                  label={`representation: ${response.representation}`}
+                  size="small"
+                />
+              </Stack>
+              <JsonViewer
+                data={response.data}
+                title="Raw JZuFi 2.3 body (upstream field names)"
+                defaultExpanded
               />
             </Stack>
-            <JsonViewer
-              data={response.data}
-              title="Raw JZuFi 2.3 body (upstream field names)"
-              defaultExpanded
-            />
-          </Stack>
-        )}
-      </QueryStateGate>
+          )}
+        </QueryStateGate>
+      </Stack>
     </>
   );
 }

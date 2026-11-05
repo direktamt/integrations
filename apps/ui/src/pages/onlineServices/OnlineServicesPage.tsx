@@ -1,10 +1,12 @@
+import { PageHeader, SectionCard } from '@direktamt/ui-kit';
 import { Button, Stack, TextField } from '@mui/material';
 import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useOnlineServices } from '../../api/queries/useOnlineServiceQueries';
+import { EndpointList } from '../../components/EndpointList';
+import { FormRow } from '../../components/FormRow';
 import { KeyListField } from '../../components/KeyListField';
 import { OnlineServiceTable } from '../../components/OnlineServiceTable';
-import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
 import { OnlineServiceAuthoritiesDialog } from './OnlineServiceAuthoritiesDialog';
@@ -67,48 +69,54 @@ export function OnlineServicesPage() {
   return (
     <>
       <PageHeader
+        overline="Services (PVOG)"
         title="Online services"
-        description="Direct online-application links for a territory."
-      />
-      <form onSubmit={submit}>
-        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-          <TextField
-            label="Regional key"
-            size="small"
-            required
-            value={keyInput}
-            onChange={(event) => setKeyInput(event.target.value)}
-          />
-          <KeyListField
-            label="Service catalog keys"
-            value={catalogKeysInput}
-            onChange={setCatalogKeysInput}
-            helperText="Optional; press Enter to add"
-          />
-          <Button
-            type="submit"
-            variant="contained"
-            sx={{ alignSelf: 'flex-start' }}
-          >
-            Load
-          </Button>
-        </Stack>
-      </form>
-      <ValidationErrorAlert error={onlineServicesQuery.error} />
-      <QueryStateGate
-        query={onlineServicesQuery}
-        idleMessage="Provide a regional key to load online services."
-        isEmpty={(services) => services.length === 0}
+        description="Direct online-application links for a territory; select a row for the responsible organisations."
       >
-        {(services) => (
-          <OnlineServiceTable
-            services={services}
-            onRowClick={(service) => {
-              if (service.id) selectOnlineService(service.id);
-            }}
-          />
-        )}
-      </QueryStateGate>
+        <EndpointList
+          paths={['/online-services', '/online-services/{id}/authorities']}
+        />
+      </PageHeader>
+      <Stack spacing={3}>
+        <SectionCard title="Territory">
+          <form onSubmit={submit}>
+            <FormRow>
+              <TextField
+                label="Regional key"
+                size="small"
+                required
+                value={keyInput}
+                onChange={(event) => setKeyInput(event.target.value)}
+              />
+              <KeyListField
+                label="Service catalog keys"
+                value={catalogKeysInput}
+                onChange={setCatalogKeysInput}
+                helperText="Optional; press Enter to add"
+              />
+              <Button type="submit" variant="contained">
+                Load
+              </Button>
+            </FormRow>
+          </form>
+          <ValidationErrorAlert error={onlineServicesQuery.error} />
+        </SectionCard>
+        <QueryStateGate
+          query={onlineServicesQuery}
+          idleMessage="Provide a regional key to load online services."
+          isEmpty={(services) => services.length === 0}
+        >
+          {(services) => (
+            <OnlineServiceTable
+              caption={`${services.length} online services`}
+              services={services}
+              onRowClick={(service) => {
+                if (service.id) selectOnlineService(service.id);
+              }}
+            />
+          )}
+        </QueryStateGate>
+      </Stack>
       {selectedId && (
         <OnlineServiceAuthoritiesDialog
           onlineServiceId={selectedId}

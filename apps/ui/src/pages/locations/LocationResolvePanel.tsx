@@ -1,14 +1,10 @@
-import {
-  Button,
-  Card,
-  CardContent,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { SectionCard } from '@direktamt/ui-kit';
+import { Box, Button, TextField } from '@mui/material';
 import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useResolveLocation } from '../../api/queries/useLocationQueries';
+import { EndpointChip } from '../../components/EndpointChip';
+import { FormRow } from '../../components/FormRow';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { ValidationErrorAlert } from '../../components/ValidationErrorAlert';
 import { LocationResultTable } from './LocationResultTable';
@@ -63,49 +59,44 @@ export function LocationResolvePanel() {
   };
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Resolve
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          GET /locations — at least one of the two criteria is required.
-        </Typography>
-        <form onSubmit={submit}>
-          <Stack direction="row" spacing={2} sx={{ my: 1 }}>
-            <TextField
-              label="City name"
-              size="small"
-              value={cityInput}
-              error={Boolean(localError)}
-              onChange={(event) => setCityInput(event.target.value)}
-            />
-            <TextField
-              label="Postal code"
-              size="small"
-              value={postalInput}
-              error={Boolean(localError)}
-              helperText={localError}
-              onChange={(event) => setPostalInput(event.target.value)}
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              sx={{ alignSelf: 'flex-start' }}
-            >
-              Resolve
-            </Button>
-          </Stack>
-        </form>
-        <ValidationErrorAlert error={resolveQuery.error} />
+    <SectionCard
+      title="Resolve"
+      description="City name or postal code to territories; at least one of the two criteria is required."
+      actions={<EndpointChip path="/locations" />}
+    >
+      <form onSubmit={submit}>
+        <FormRow>
+          <TextField
+            label="City name"
+            size="small"
+            value={cityInput}
+            error={Boolean(localError)}
+            onChange={(event) => setCityInput(event.target.value)}
+          />
+          <TextField
+            label="Postal code"
+            size="small"
+            value={postalInput}
+            error={Boolean(localError)}
+            helperText={localError}
+            onChange={(event) => setPostalInput(event.target.value)}
+          />
+          <Button type="submit" variant="contained">
+            Resolve
+          </Button>
+        </FormRow>
+      </form>
+      <ValidationErrorAlert error={resolveQuery.error} />
+      <Box sx={{ mt: 2.5 }}>
         <QueryStateGate
           query={resolveQuery}
           idleMessage="Submit a city name or postal code."
           isEmpty={(locations) => locations.length === 0}
+          dense
         >
           {(locations) => <LocationResultTable locations={locations} />}
         </QueryStateGate>
-      </CardContent>
-    </Card>
+      </Box>
+    </SectionCard>
   );
 }

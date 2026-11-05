@@ -1,25 +1,24 @@
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import { PageHeader, SectionCard } from '@direktamt/ui-kit';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DataObjectIcon from '@mui/icons-material/DataObject';
+import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
+import type { PublicServiceDescription } from '@direktamt/integrations-contracts';
 import { Box, Button, Stack, Typography } from '@mui/material';
-import {
-  Link as RouterLink,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from 'react-router';
+import { ReactNode } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   useService,
   useServiceAuthorities,
 } from '../../api/queries/useServiceQueries';
 import { AuthorityCardList } from '../../components/AuthorityCardList';
+import { EndpointList } from '../../components/EndpointList';
 import { JsonViewer } from '../../components/JsonViewer';
 import { KeyChip } from '../../components/KeyChip';
-import { PageHeader } from '../../components/PageHeader';
 import { QueryStateGate } from '../../components/QueryStateGate';
 import { parseDefaultTrueBoolean } from './DefaultTrueBoolean';
 import { ServiceMetadataList } from './ServiceMetadataList';
 import { ServiceSectionList } from './ServiceSectionList';
+import { deriveServiceSummary } from './ServiceSummary';
 import { deriveServiceTitle } from './ServiceTitle';
 
 /**
@@ -47,109 +46,175 @@ export function ServiceDetailPage() {
   return (
     <>
       <PageHeader
-        title="Service detail"
-        description={`GET /services/${id}`}
+        overline="Service description (PVOG)"
+        title={
+          serviceQuery.data
+            ? deriveServiceTitle(serviceQuery.data)
+            : 'Service detail'
+        }
+        description={
+          serviceQuery.data
+            ? deriveServiceSummary(serviceQuery.data)
+            : undefined
+        }
         actions={
-          <Stack direction="row" spacing={1}>
+          <>
             <Button
-              startIcon={<AccountTreeIcon />}
-              component={RouterLink}
-              to={`/services/${encodeURIComponent(id)}/context?${searchParams.toString()}`}
-            >
-              Inspect composed context
-            </Button>
-            <Button
-              startIcon={<DataObjectIcon />}
-              component={RouterLink}
-              to={`/raw?id=${encodeURIComponent(id)}`}
-            >
-              Raw JZuFi 2.3
-            </Button>
-            <Button
+              variant="outlined"
+              color="inherit"
               startIcon={<ArrowBackIcon />}
               onClick={() => void navigate(-1)}
             >
               Back
             </Button>
-          </Stack>
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<DataObjectOutlinedIcon />}
+              href={`/raw?id=${encodeURIComponent(id)}`}
+            >
+              Raw JZuFi 2.3
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AccountTreeOutlinedIcon />}
+              href={`/services/${encodeURIComponent(id)}/context?${searchParams.toString()}`}
+            >
+              Inspect composed context
+            </Button>
+          </>
         }
-      />
+      >
+        <EndpointList
+          paths={[`/services/${id}`, `/services/${id}/authorities`]}
+        />
+      </PageHeader>
       <QueryStateGate
         query={serviceQuery}
         idleMessage="A regionalKey URL parameter is required to load this service."
       >
         {(service) => (
-          <Stack spacing={2}>
-            <Typography variant="h6">{deriveServiceTitle(service)}</Typography>
-            {service.summary && (
-              <Typography variant="body2" color="text.secondary">
-                {service.summary}
-              </Typography>
-            )}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Service catalog keys (LeiKa)
-              </Typography>
-              {service.serviceCatalogKeys.length > 0 ? (
-                service.serviceCatalogKeys.map((key) => (
-                  <KeyChip key={key} value={key} />
-                ))
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  None
-                </Typography>
-              )}
-            </Box>
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Regional keys (ARS)
-              </Typography>
-              {service.regionalKeys.length > 0 ? (
-                service.regionalKeys.map((key) => (
-                  <KeyChip key={key} value={key} />
-                ))
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  None
-                </Typography>
-              )}
-            </Box>
-            <ServiceMetadataList service={service} />
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Sections
-              </Typography>
-              <ServiceSectionList sections={service.sections} />
-            </Box>
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Responsible authorities
-              </Typography>
-              <QueryStateGate
-                query={authoritiesQuery}
-                isEmpty={(authorities) => authorities.length === 0}
-                emptyMessage="No responsible authority is published for this service in the territory."
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'minmax(0, 1fr)',
+                lg: 'minmax(0, 1fr) 320px',
+              },
+              gap: 3,
+              alignItems: 'start',
+            }}
+          >
+            <Stack spacing={3} sx={{ minWidth: 0 }}>
+              <SectionCard
+                title="Sections"
+                description="Content sections as published, with the original German titles."
               >
-                {(authorities) => (
-                  <Stack spacing={2}>
-                    <AuthorityCardList
-                      items={authorities.map(({ authority, role }) => ({
-                        authority,
-                        roles: [role],
-                      }))}
-                    />
-                    <JsonViewer
-                      data={authorities}
-                      title="Raw authorities response"
-                    />
-                  </Stack>
-                )}
-              </QueryStateGate>
+                <ServiceSectionList sections={service.sections} />
+              </SectionCard>
+              <SectionCard
+                title="Responsible authorities"
+                description="Organisation units responsible for this service in the territory."
+              >
+                <QueryStateGate
+                  query={authoritiesQuery}
+                  isEmpty={(authorities) => authorities.length === 0}
+                  emptyMessage="No responsible authority is published for this service in the territory."
+                  dense
+                >
+                  {(authorities) => (
+                    <Stack spacing={2}>
+                      <AuthorityCardList
+                        items={authorities.map(({ authority, role }) => ({
+                          authority,
+                          roles: [role],
+                        }))}
+                      />
+                      <JsonViewer
+                        data={authorities}
+                        title="Raw authorities response"
+                      />
+                    </Stack>
+                  )}
+                </QueryStateGate>
+              </SectionCard>
+              <JsonViewer data={service} title="Raw response" />
+            </Stack>
+            <Box sx={{ position: { lg: 'sticky' }, top: { lg: 84 } }}>
+              <ServiceFacts service={service} regionalKey={regionalKey} />
             </Box>
-            <JsonViewer data={service} title="Raw response" />
-          </Stack>
+          </Box>
         )}
       </QueryStateGate>
     </>
+  );
+}
+
+interface ServiceFactsProps {
+  service: PublicServiceDescription;
+  regionalKey: string;
+}
+
+/**
+ * Side column: official keys and publication metadata of the service.
+ */
+function ServiceFacts({ service, regionalKey }: ServiceFactsProps) {
+  return (
+    <SectionCard title="Identifiers">
+      <Stack spacing={2.5}>
+        <FactGroup title="PVOG id">
+          {service.id ? <KeyChip value={service.id} /> : null}
+        </FactGroup>
+        <FactGroup title="Requested territory (ARS)">
+          {regionalKey ? <KeyChip value={regionalKey} /> : null}
+        </FactGroup>
+        <FactGroup title="Service catalog keys (LeiKa)">
+          {service.serviceCatalogKeys.map((key) => (
+            <KeyChip key={key} value={key} />
+          ))}
+        </FactGroup>
+        <FactGroup title="Regional keys (ARS)">
+          {service.regionalKeys.map((key) => (
+            <KeyChip key={key} value={key} />
+          ))}
+        </FactGroup>
+        <ServiceMetadataList service={service} dense />
+      </Stack>
+    </SectionCard>
+  );
+}
+
+interface FactGroupProps {
+  title: string;
+  children: ReactNode;
+}
+
+function FactGroup({ title, children }: FactGroupProps) {
+  const isEmpty = Array.isArray(children) ? children.length === 0 : !children;
+
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        component="div"
+        sx={{ color: 'text.secondary', fontWeight: 600, marginBottom: 0.75 }}
+      >
+        {title}
+      </Typography>
+      {isEmpty ? (
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          None
+        </Typography>
+      ) : (
+        <Stack
+          direction="row"
+          spacing={0.75}
+          useFlexGap
+          sx={{ flexWrap: 'wrap' }}
+        >
+          {children}
+        </Stack>
+      )}
+    </Box>
   );
 }
