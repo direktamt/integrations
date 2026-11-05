@@ -212,6 +212,17 @@ packages.
 Both applications run with an empty environment; see Configuration for the
 optional overrides.
 
+### Docker
+
+```bash
+docker build --target api -t direktamt/integrations-api .
+docker run --rm -p 3000:3000 direktamt/integrations-api
+```
+
+The image holds the built API and the built stdio MCP server
+(`/repo/packages/mcp/dist/Main.js`, see `packages/mcp/README.md`), not the
+console. Configuration goes in as environment variables (`docker run -e`).
+
 ## Configuration
 
 Copy the templates and adjust them when the defaults do not fit:
