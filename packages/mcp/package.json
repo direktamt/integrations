@@ -1,0 +1,72 @@
+{
+  "name": "@direktamt/integrations-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Model Context Protocol server for the DirektAmt integrations API: one read-only tool per public endpoint over stdio.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "direktamt-integrations-mcp": "dist/Main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/Main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"{src,scripts,test}/**/*.ts\"",
+    "lint:fix": "eslint \"{src,scripts,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "verify:tool-coverage": "ts-node -P tsconfig.scripts.json scripts/VerifyToolCoverage.ts"
+  },
+  "dependencies": {
+    "@direktamt/integrations-client": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@nestjs/common": "^11.0.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^17.0.0",
+    "jest": "^30.0.0",
+    "prettier": "^3.4.2",
+    "reflect-metadata": "^0.2.2",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^@direktamt/integrations-client$": "<rootDir>/../../client/src/index.ts",
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "testEnvironment": "node"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "license": "Apache-2.0"
+}

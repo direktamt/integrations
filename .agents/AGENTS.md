@@ -9,8 +9,10 @@ inspecting it. All code and documentation stay within this integration
 boundary; the broader DirektAmt application is not part of this repository.
 
 Monorepo: `apps/api/` (NestJS anti-corruption layer), `apps/ui/` (developer
-console), `packages/contracts/` (shared response models) and
-`packages/client/` (typed TypeScript client over the API). API-specific
+console), `packages/contracts/` (shared response models),
+`packages/client/` (typed TypeScript client over the API) and
+`packages/mcp/` (stdio MCP server, one tool per public endpoint over the
+client). API-specific
 instructions: `apps/api/.agents/AGENTS.md`.
 
 ## Hard conventions (apply everywhere)
@@ -55,9 +57,12 @@ instructions: `apps/api/.agents/AGENTS.md`.
    owns them.
 
 7. **Integration scope only.** Add code only when it integrates, normalizes,
-   verifies or inspects official upstream data. The deployable applications
-   remain `apps/api` and `apps/ui`; any additional deployable requires an
-   explicit architecture decision demonstrating integration-domain ownership.
+   verifies or inspects official upstream data. The runnable applications
+   are `apps/api`, `apps/ui` and the stdio MCP server in `packages/mcp`; any
+   additional deployable requires an explicit architecture decision
+   demonstrating integration-domain ownership. The MCP server stays a thin
+   adapter: one tool per public endpoint (`npm run verify:mcp-coverage`), the
+   contracts returned unchanged, no LLM call and no product logic.
 
 ## Key documents
 

@@ -33,5 +33,8 @@ jobs:
       - name: Test
         run: npm run test
 
+      - name: Verify MCP tool coverage
+        run: npm run verify:mcp-coverage
+
       - name: Build
         run: npm run build

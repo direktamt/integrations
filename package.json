@@ -7,6 +7,7 @@
   "workspaces": [
     "packages/contracts",
     "packages/client",
+    "packages/mcp",
     "apps/api",
     "apps/ui"
   ],
@@ -19,9 +20,10 @@
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run verify:mcp-coverage && npm run build",
     "verify:contracts": "npm run verify:contracts --workspace @direktamt/integrations-api",
     "verify:pvog-service-search-compat": "npm run verify:pvog-service-search-compat --workspace @direktamt/integrations-api",
+    "verify:mcp-coverage": "npm run verify:tool-coverage --workspace @direktamt/integrations-mcp",
     "prepare": "husky"
   },
   "devDependencies": {
