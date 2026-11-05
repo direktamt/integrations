@@ -77,7 +77,7 @@ export function AppLayout() {
 
   return (
     <AppShell
-      brand={<ProductLockup product="Integrations" href="/" />}
+      brand={<ProductLockup product="Integrations" href="/" animated />}
       headerActions={
         <>
           <Button
