@@ -68,6 +68,9 @@ integrations API (NestJS)
   shared contracts; see [`packages/client/README.md`](packages/client/README.md).
 - **React inspection console** (`apps/ui`): a local developer tool for
   exercising the API and inspecting live upstream data.
+- **MCP server** (`packages/mcp`): one read-only Model Context Protocol tool
+  per normalized endpoint over stdio, built on the typed client, for agents
+  and other MCP hosts; see [`packages/mcp/README.md`](packages/mcp/README.md).
 
 ## The composed service context
 
@@ -188,6 +191,7 @@ are checked; there is no wire model and no normalization.
 | `apps/ui/`            | React inspection console for the integrations API ([README](apps/ui/README.md))                             |
 | `packages/contracts/` | Shared TypeScript response models (`@direktamt/integrations-contracts`)                                     |
 | `packages/client/`    | Typed TypeScript client for the API (`@direktamt/integrations-client`, [README](packages/client/README.md)) |
+| `packages/mcp/`       | MCP server over the client (`@direktamt/integrations-mcp`, [README](packages/mcp/README.md))                |
 | `.agents/`            | Conventions and skills for coding agents working in this repository                                         |
 
 ## Quick start
@@ -249,13 +253,14 @@ npm run dev:ui       # console only
 npm run lint         # ESLint in all workspaces, read-only
 npm run lint:fix     # ESLint with auto-fix
 npm run typecheck    # tsc --noEmit in all workspaces
-npm run test         # API and client unit tests (stubbed fetch, no network)
-npm run build        # contracts, client, API and console
-npm run check        # lint, typecheck, test, build
+npm run test         # API, client and MCP unit tests (stubbed fetch, no network)
+npm run verify:mcp-coverage  # every public endpoint has an MCP tool or a documented exclusion
+npm run build        # contracts, client, MCP server, API and console
+npm run check        # lint, typecheck, test, MCP tool coverage, build
 ```
 
-CI runs `npm ci` followed by lint, typecheck, test and build on every push and
-pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Unit
+CI runs `npm ci` followed by lint, typecheck, test, the MCP tool coverage
+check and build on every push and pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Unit
 tests never call the upstream APIs.
 
 Contract drift of the live PVOG and FIM APIs is checked separately:

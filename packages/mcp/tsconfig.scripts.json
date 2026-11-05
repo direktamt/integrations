@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node10",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "experimentalResolver": true
+  }
+}
