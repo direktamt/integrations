@@ -213,16 +213,38 @@ packages.
 Both applications run with an empty environment; see Configuration for the
 optional overrides.
 
-### Docker
+## Container image
+
+Every commit on `master` that has passed CI is published to the GitHub
+Container Registry as a `linux/arm64` image:
+
+```bash
+docker pull ghcr.io/direktamt/integrations-api:master
+docker run --rm -p 3000:3000 ghcr.io/direktamt/integrations-api:master
+curl http://localhost:3000/health
+```
+
+| Tag                  | Meaning                                                 |
+| -------------------- | ------------------------------------------------------- |
+| `sha-<short commit>` | One commit, never moved: the tag to pin in a deployment |
+| `master`             | The newest published commit, moves with the branch      |
+
+The image holds the built API and the built stdio MCP server
+(`/repo/packages/mcp/dist/Main.js`, see `packages/mcp/README.md`), not the
+console. It runs as the unprivileged user `node` and listens on port 3000.
+Configuration goes in as environment variables (`docker run -e`, see
+Configuration); none is required.
+
+`GET /health` answers `{ "status": "ok" }` without calling an upstream API.
+It is the liveness probe for container platforms and load balancers and is
+not part of the OpenAPI document.
+
+For another architecture, build the image from the repository:
 
 ```bash
 docker build --target api -t direktamt/integrations-api .
 docker run --rm -p 3000:3000 direktamt/integrations-api
 ```
-
-The image holds the built API and the built stdio MCP server
-(`/repo/packages/mcp/dist/Main.js`, see `packages/mcp/README.md`), not the
-console. Configuration goes in as environment variables (`docker run -e`).
 
 ## Configuration
 
