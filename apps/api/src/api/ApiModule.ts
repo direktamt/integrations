@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { IntegrationsModule } from '../integrations/IntegrationsModule';
 import { CatalogController } from './controller/CatalogController';
+import { HealthController } from './controller/HealthController';
 import { LocationController } from './controller/LocationController';
 import { MasterTextController } from './controller/MasterTextController';
 import { OnlineServiceController } from './controller/OnlineServiceController';
@@ -20,6 +21,7 @@ import { ServiceController } from './controller/ServiceController';
     CatalogController,
     MasterTextController,
     RawPvogController,
+    HealthController,
   ],
 })
 export class ApiModule {}

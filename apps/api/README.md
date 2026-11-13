@@ -65,6 +65,7 @@ src/
     ApiModule.ts
     controller/                      # one controller per resource
                                      #   RawPvogController: /raw/pvog, static whitelist of provider representations
+                                     #   HealthController: /health, liveness probe without upstream calls
     request/                         # validated query DTOs
     filter/UpstreamExceptionFilter.ts  # integration failures -> 404 / 502 / 504
   integrations/                      # upstream adapters

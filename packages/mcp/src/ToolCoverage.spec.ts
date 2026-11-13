@@ -74,10 +74,11 @@ describe('tool catalog', () => {
     }
   });
 
-  it('excludes exactly the two raw PVOG pass-through endpoints', () => {
+  it('excludes exactly the raw PVOG pass-through endpoints and the liveness probe', () => {
     expect(EXCLUDED_ENDPOINTS.map((excluded) => excluded.endpoint)).toEqual([
       'GET /raw/pvog/services/{id}/jzufi-2-3',
       'GET /raw/pvog/online-services/{id}/jzufi-2-3',
+      'GET /health',
     ]);
   });
 });
