@@ -22,4 +22,9 @@ export const EXCLUDED_ENDPOINTS: readonly ExcludedEndpoint[] = [
     reason:
       'Raw provider document without normalisation or compatibility guarantee; the normalised online-service tools cover its content.',
   },
+  {
+    endpoint: 'GET /health',
+    reason:
+      'Operational liveness probe for container platforms and load balancers; it returns no integration data.',
+  },
 ];
